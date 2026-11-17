@@ -55,6 +55,11 @@ export function branchRelations(a, b) {
 
 const evidence = (ruleId, text, fields = []) => ({ ruleId, text, fields });
 const groupWords = { peer: '比劫', output: '食伤', wealth: '财星', authority: '官杀', resource: '印星' };
+const PUBLIC_TITLES = {
+  pattern: '整体发展', career: '事业工作', wealth: '收入积累', family: '父母家人',
+  relationship: '感情婚姻', study: '学习考试', wellbeing: '身心状态', mobility: '外出变动',
+  home: '住房家产', disputes: '合同纠纷', character: '性格做事', network: '人际合作',
+};
 
 export function analyzeChart(chart, input = {}) {
   const columns = chartColumns(chart);
@@ -103,27 +108,54 @@ export function analyzeChart(chart, input = {}) {
   const clashEvidence = relations.filter(r => ['冲', '刑', '害'].includes(r.relation)).map(r => evidence('R03-friction', `${r.text}；只表传统关系标签。`, r.keys.map(x => `pillars.${x}`)));
   const hasGroup = key => groups[key].length > 0;
   const groupSummary = (key, yes, no) => hasGroup(key) ? yes : no;
+  const dayFriction = relations.some(r => r.keys.includes('day') && ['冲', '刑', '害'].includes(r.relation));
+  const dayCooperation = relations.some(r => r.keys.includes('day') && r.relation === '合');
+  const familyFriction = relations.some(r => (r.keys.includes('year') || r.keys.includes('month')) && ['冲', '刑', '害'].includes(r.relation));
+  const changing = relations.some(r => r.relation === '冲');
+  const mainRoute = {
+    authority: '你比较看重责任和做事的分寸，对目标、要求和别人是否认可自己的成绩较敏感。',
+    resource: '你做事有先弄明白、再下判断的一面，善于从经验和已有知识中找办法，发展往往靠长期积累见长。',
+    output: '你有自己的想法，也愿意通过表达和实际成果让别人看见，做事的动力常来自“把这件事做得更好”。',
+    wealth: '你比较看重实际结果，对收入、资源和投入是否值得较留意，做事容易围绕明确目标展开。',
+    peer: '你有主见，比较看重自主和掌控，认准的事情愿意亲自投入，遇到问题也倾向先靠自己解决。',
+  }[monthGroup];
+  const secondStrength = hasGroup('authority') && hasGroup('resource')
+    ? '事业上，专业积累、资历和承担责任能够相互带动，比起短期表现，更容易靠持续做成事情建立位置。'
+    : hasGroup('output') && hasGroup('wealth')
+      ? '能力和挣钱之间有较直接的联系，项目、作品、技术或服务是容易发挥的地方，成果越具体，机会越容易接上。'
+      : hasGroup('resource') && hasGroup('peer')
+        ? '既能吸收别人的经验，也有自己坚持的方向，在熟悉的领域里，耐心和独立做事的能力是长处。'
+        : hasGroup('wealth')
+          ? '对现实安排和资源分配较上心，钱财积累通常与工作成果、家庭责任一起推进，属于一件件落实的路子。'
+          : '在目标清楚、能持续投入的事情上，更容易做出自己的积累，发展节奏偏向逐步站稳再向外展开。';
+  const paceAdvice = tendency === '偏弱倾向'
+    ? '短板是事情集中时容易顾此失彼，既想把责任接住，又可能被太多要求牵着走。'
+    : tendency === '偏旺倾向'
+      ? '短板是主意定得较快，遇到不同意见时不太容易马上退让，合作和亲近关系中尤其需要磨合。'
+      : dayFriction
+        ? '关系里容易出现“彼此在意、做法却不一致”的情况，工作与生活节奏一冲突，就需要多花心思协调。'
+        : '同时面对几种选择时，容易在稳妥和求快之间来回权衡，发展中会有边做边调整的阶段。';
   const common = ['现实条件、资源与个人选择会改变事情如何表现。'];
   const configs = {
-    pattern: { summary: `${candidate}；${tendency}。先核成格条件，再谈发展空间。`, evidence: [...pattern.evidence, ...strengthEvidence], opportunities: ['把月令、透干、根气及制化逐项对照，保持解释可复核。'], cautions: pattern.cautions },
-    career: { summary: groupSummary('authority', '原局见官杀，组织规则、责任与考核是可讨论的职业主题。', '原局未见官杀，不据此断定没有职位或成就；职业判断更依赖现实行业与技能。'), evidence: [...groups.authority, ...groups.resource.slice(0, 2)], opportunities: [hasGroup('resource') ? '官印同见时，可讨论培训、资格与组织内责任的配合。' : '结合已有职责，分清专业贡献与管理要求。'], cautions: ['官杀出现不能直接推出公务员身份、升职年份或行政级别。'] },
-    wealth: { summary: groupSummary('wealth', '财星在原局有据，收入安排、资源管理与积累方式值得重点分析。', '财星未显并不等于贫穷；要看技能变现、财务习惯与运年引动。'), evidence: [...groups.wealth, ...groups.output.slice(0, 2)], opportunities: [hasGroup('output') ? '食伤与财星主题可联系作品、服务、交付和回款。' : '把稳定收入、临时收入与大额支出分别记录。'], cautions: ['不由命盘推断资产数额、投资收益或所谓必赚年份。'] },
-    family: { summary: '以年、月柱与印比结构讨论支持、代际互动与照料责任，保留每位亲属的真实情况。', evidence: [...familyEvidence, ...groups.resource.slice(0, 2), ...groups.peer.slice(0, 2)], opportunities: ['把家庭支持与自己承担的时间、经济责任分开讨论。'], cautions: ['不据单一十神判断亲属生死、品性或关系必然破裂。'] },
-    relationship: { summary: relationshipEvidence.length ? '日支参与原局合冲刑害，亲密关系中的协商、边界和共同安排是可讨论的主题。' : '日支未出现本规则集列出的原局合冲刑害；这不代表关系必然顺利或无需经营。', evidence: relationshipEvidence.length ? relationshipEvidence : [evidence('R01-day-palace', `日支为${columns[2].branch}，作为传统配偶宫观察点。`, ['pillars.day'])], opportunities: ['结合单身、恋爱或已婚状态，讨论沟通、共同财务与居住安排。'], cautions: ['不把日支冲合直接写成离婚、出轨或必婚；不以命盘判定伴侣价值。'] },
-    study: { summary: hasGroup('resource') || hasGroup('output') ? '印星与食伤所对应的吸收、训练和表达主题可作为学习路径参考。' : '原局未见显著印食伤标签，不能据此否定学历、学习能力或文名。', evidence: [...groups.resource, ...groups.output].slice(0, 6), opportunities: ['以明确课程、考试或作品为目标，让学习投入与可展示成果衔接。'], cautions: ['不将文星、印星等同于录取通知或考试分数。'] },
-    wellbeing: { summary: '这一栏目只整理压力、作息与恢复节律的传统意象；不推断疾病、寿命或死亡年份。', evidence: strengthEvidence.slice(0, 2), opportunities: ['如有真实身体不适，以检查和专业意见为准；记录作息与压力可帮助现实复盘。'], cautions: ['五行对应不能用于医学诊断、用药或判断具体器官病变。'] },
-    mobility: { summary: clashEvidence.some(e => e.text.includes('冲')) ? '原局存在支冲，可把环境变化、搬迁或岗位切换列作背景核对主题。' : '本规则集未发现原局六冲；迁移仍可能由求学、职业或家庭需要发生。', evidence: clashEvidence.filter(e => e.text.includes('冲')), opportunities: ['先确认出差、迁居、升学或异地项目是否已有现实安排。'], cautions: ['六冲不能单独推出搬家、车祸或特定目的地。'] },
-    home: { summary: '居住与家产需结合财星、印星和家庭宫位观察，实际住房条件与家庭计划优先。', evidence: [...groups.wealth.slice(0, 2), ...groups.resource.slice(0, 2), ...familyEvidence.slice(0, 2)], opportunities: ['已有买房、装修、租约计划时，可细分预算、手续与家庭协调。'], cautions: ['不凭命盘承诺置业能力、房价变化或房产套数。'] },
-    disputes: { summary: hasGroup('authority') && hasGroup('output') ? '官杀与食伤同见，可讨论规则要求和个人表达之间如何协调。' : '以既有合同、流程和沟通事实判断冲突；原局标签不足以推断诉讼。', evidence: [...groups.authority.slice(0, 2), ...groups.output.slice(0, 2), ...clashEvidence.slice(0, 2)], opportunities: ['涉及合作时，把责任、验收、结算和变更记录写清楚。'], cautions: ['不预言犯罪、定罪、刑期或灾祸；法律问题依据真实材料处理。'] },
-    character: { summary: '以印比、食伤、财官的组合描述吸收信息、表达、协作和承担责任的倾向，不作道德判断。', evidence: exposed.map(c => evidence('F03-character-theme', `${c.label}${c.stem}为${c.stemGod}，仅作行为主题的传统入口。`, [`pillars.${c.key}`])), opportunities: ['用具体经历核对哪些描述符合自己，并保留不符合的部分。'], cautions: ['不能由干支判定善恶、诚实程度或固定人格。'] },
-    network: { summary: groupSummary('peer', '比劫出现，可讨论同伴支持、竞争与资源分配的双面性。', '比劫未显不代表缺少朋友；合作质量仍取决于共同目标和边界。'), evidence: [...groups.peer, ...groups.resource.slice(0, 2)], opportunities: ['在合伙或团队协作中分清职责、报酬、决策权和退出方式。'], cautions: ['比劫不直接等于朋友夺财，印星也不保证一定有人相助。'] },
+    pattern: { summary: `${mainRoute}${secondStrength}${paceAdvice}`, evidence: [...pattern.evidence, ...strengthEvidence], opportunities: [hasGroup('resource') ? '把一项专业做到能独立解决问题，资历和口碑会更容易接上。' : '选一个自己能持续交付成果的方向，先做好，再扩大规模。'], publicAdvice: '下一阶段只定一个主要目标，再为它安排时间、资源和合作对象。', cautions: pattern.cautions },
+    career: { summary: groupSummary('authority', '工作上更适合有明确职责和上升路径的岗位，可靠、守时、能交付是可以做出来的优势。也容易把考核和别人的期待看得较重，别把所有责任都揽到自己身上。', '工作上更需要凭具体本事站住脚，专业作品、客户反馈和解决问题的能力，比空泛的头衔更有分量。方向不宜换得太勤，要给经验积累留出时间。'), evidence: [...groups.authority, ...groups.resource.slice(0, 2)], opportunities: [hasGroup('resource') ? '培训、考证和专业进修适合与正在承担的工作结合，学完就找机会用起来。' : '挑一项能被明确评价的任务做出结果，争取独立负责的机会。'], publicAdvice: '接新任务前，把负责范围、完成标准和可用资源说清楚。', cautions: ['官杀出现不能直接推出公务员身份、升职年份或行政级别。'] },
+    wealth: { summary: groupSummary('wealth', '对投入产出和手里的资源较留意，收入往往与实际项目、工作成果和承担的责任绑在一起。积累的难点是进账之外还有支出和人情安排，忙得多不一定就留得多。', '收入更容易围绕本职工作和逐渐成熟的专长展开，积累偏向持续做事、慢慢留住。遇到新机会时容易被外面的节奏带动，项目铺得太多反而会分散精力。'), evidence: [...groups.wealth, ...groups.output.slice(0, 2)], opportunities: [hasGroup('output') ? '作品、技术、服务和实际交付，是把能力换成收入的着力点。' : '把固定收入、额外收入和大额开销分开，能更清楚地看到积累从哪里来。'], publicAdvice: '谈合作时同时谈清付款时间和结算条件，不只看表面金额。', cautions: ['不由命盘推断资产数额、投资收益或所谓必赚年份。'] },
+    family: { summary: familyFriction ? '你和家人之间更需要把关心与做法分开看：在意彼此，却可能在工作、花钱或生活安排上各有主意。把话说清楚通常比默默承担、事后委屈更有用。' : hasGroup('resource') ? '家人和长辈的经验，可以成为你遇事时的一份支持。接受帮助时也要保留自己的判断，尤其是涉及长期工作和生活选择的时候。' : '处理家里的事，适合走务实路线：谁有空、谁出力、谁承担费用，提前讲好会轻松很多。别因不好意思开口，就把长期责任都放在自己身上。', evidence: [...familyEvidence, ...groups.resource.slice(0, 2), ...groups.peer.slice(0, 2)], opportunities: ['把探望、照料和经济支持安排成能长期做到的节奏，关系更容易稳定。'], publicAdvice: '有分歧时先讨论眼前这件事怎么处理，少翻旧账，也少替别人做决定。', cautions: ['不据单一十神判断亲属生死、品性或关系必然破裂。'] },
+    relationship: { summary: dayFriction ? '感情里既有靠近的需要，也容易在节奏、花钱和相处方式上互不相让。关系能走得稳，关键是把分歧谈具体，不用冷处理代替沟通。' : dayCooperation ? '感情里比较重视陪伴和共同安排，愿意为关系投入时间。要留意过度迁就，把自己的需求说出来，双方才知道怎样相处更舒服。' : '感情更适合慢慢建立信任，用日常相处看清彼此的习惯和责任感。关系稳定之后，也别把交流省掉，重要安排仍要一起商量。', evidence: relationshipEvidence.length ? relationshipEvidence : [evidence('R01-day-palace', `日支为${columns[2].branch}，作为传统配偶宫观察点。`, ['pillars.day'])], opportunities: ['一起处理一件实际的事，比只谈感受更容易看清双方能否配合。'], publicAdvice: '认真交往时，尽早聊清时间分配、金钱习惯和未来住在哪里。', cautions: ['不把日支冲合直接写成离婚、出轨或必婚；不以命盘判定伴侣价值。'] },
+    study: { summary: hasGroup('resource') && hasGroup('output') ? '学习上适合“学完再讲出来、做出来”，把知识整理成笔记、作品或解题步骤，更容易真正掌握。要留意准备很多、迟迟不交成果。' : hasGroup('resource') ? '学习更适合有系统、有老师或教材带着走，基础打牢后，后面的进步更稳。容易在资料准备上花时间，练题和实际应用也要跟上。' : hasGroup('output') ? '学习适合从实际问题入手，边做边改，表达和动手能帮助你把知识记住。遇到考试，还要单独训练答题格式和时间分配。' : '学习更需要一个明确目标和固定节奏，分阶段练习比临时猛学更合适。课程不要同时铺得太多，先把一门真正学会。', evidence: [...groups.resource, ...groups.output].slice(0, 6), opportunities: ['用考试、资格申请或一份可展示的作品，把学习投入变成明确成果。'], publicAdvice: '每周安排一次不看资料的练习，看看自己究竟会了多少。', cautions: ['不将文星、印星等同于录取通知或考试分数。'] },
+    wellbeing: { summary: tendency === '偏弱倾向' ? '身心状态更需要靠稳定节奏来照顾。事情集中时，把任务分批处理、留出休息时间，比一直硬撑更容易维持状态。' : tendency === '偏旺倾向' ? '做事有劲头时，也要给自己留一个收工的时间。适量活动能帮助切换状态，别让连续加班、熬夜挤掉日常休息。' : '状态更适合靠规律来维持：工作、活动和休息都有固定位置，忙时也不至于全部打乱。尤其留意短期突击以后，能否回到正常节奏。', evidence: strengthEvidence.slice(0, 2), opportunities: ['把容易消耗精力的事情分散安排，保留一段不被工作打断的休息时间。'], publicAdvice: '先从固定起床和收工时间做起，不必一下给自己加很多要求。', cautions: ['五行对应不能用于医学诊断、用药或判断具体器官病变。'] },
+    mobility: { summary: changing ? '外出、换环境和接触不同的人，更容易成为打开局面的机会。变化多时也容易打乱原有安排，搬迁或换岗位前，把接下来的生活接稳更重要。' : '发展更适合先站稳一个地方，再带着明确目的往外走。为了具体工作、求学或家庭安排而动，比单纯想换个环境更容易见到成果。', evidence: clashEvidence.filter(e => e.text.includes('冲')), opportunities: [changing ? '异地项目、出差或跨团队协作，可以成为接触新机会的入口。' : '先从短期出差、合作或课程接触新环境，再决定是否长期迁移。'], publicAdvice: '动身前把工作衔接、住处、通勤和费用一起算进去。', cautions: ['六冲不能单独推出搬家、车祸或特定目的地。'] },
+    home: { summary: hasGroup('wealth') && hasGroup('resource') ? '住房和家庭积累适合放在长期安排里，既看负担能力，也看是否真正方便生活。家里意见较多时，先把预算和实际需求统一，后面会省心。' : changing ? '居住安排可能需要随着工作或家庭节奏调整，保留一定灵活性会更从容。别只看眼前方便，也要算上搬家、装修和日常通勤的成本。' : '安定、好打理的居住环境更有利于把精力放在正事上。涉及租房、装修或置业时，适合按自己的现金和生活需要逐步推进。', evidence: [...groups.wealth.slice(0, 2), ...groups.resource.slice(0, 2), ...familyEvidence.slice(0, 2)], opportunities: ['先解决最影响日常生活的一两个问题，小调整也能让家里舒服很多。'], publicAdvice: '花大钱之前先定预算上限，并留出手续、工期和临时开销的余地。', cautions: ['不凭命盘承诺置业能力、房价变化或房产套数。'] },
+    disputes: { summary: hasGroup('authority') && hasGroup('output') ? '你容易有自己的判断，遇到不合理的安排也愿意指出来，这是解决问题的长处。需要留意的是表达方式，先把事实和要求讲清楚，比当场争高下更有效。' : clashEvidence.length ? '分歧往往更值得从责任不清、口头约定或沟通节奏里找原因。把该写下来的事写清楚，能减少后续来回解释和相互埋怨。' : '处理分歧更适合稳妥、按流程来，事实清楚时不必急着争辩。不要因为关系熟，就省去合同、验收或交接这些步骤。', evidence: [...groups.authority.slice(0, 2), ...groups.output.slice(0, 2), ...clashEvidence.slice(0, 2)], opportunities: ['提前讲清责任、交付和结算，能把不少矛盾解决在正式合作之前。'], publicAdvice: '重要变更留下文字确认，情绪上来时先缓一缓再回复。', cautions: ['不预言犯罪、定罪、刑期或灾祸；法律问题依据真实材料处理。'] },
+    character: { summary: hasGroup('output') ? '做事容易有自己的想法，愿意表达，也适合通过实际成果说服别人。要留意想到就说、说完就做，重要事情多留一步检查会更稳。' : hasGroup('resource') ? '做事更愿意先弄明白再行动，整理信息、吸收经验是可以发挥的长处。要留意想得周全却迟迟不开始，先做一个小版本往往更有效。' : hasGroup('peer') ? '做事较看重自主和掌控，认准的事情愿意自己扛。合作时适当分工、让别人参与，能把个人的坚持变成团队的推进力。' : '做事更适合围绕具体目标，一件件安排清楚再推进。遇到同时出现的要求，先定轻重缓急，避免被眼前琐事带着走。', evidence: exposed.map(c => evidence('F03-character-theme', `${c.label}${c.stem}为${c.stemGod}，仅作行为主题的传统入口。`, [`pillars.${c.key}`])), opportunities: ['把自己最顺手的做事方式用在合适的任务上，再用清单补容易遗漏的环节。'], publicAdvice: '重要决定给自己留一次复查：目标是什么，代价是什么，下一步由谁来做。', cautions: ['不能由干支判定善恶、诚实程度或固定人格。'] },
+    network: { summary: groupSummary('peer', '和同龄人、同行合作，既能互相带动，也容易在分工和利益上较劲。合得来是一回事，能否长期一起做事还要看责任和账目是否清楚。', '人际合作更适合重质量，找能互补、愿意把事情做好的人慢慢建立信任。不必为了维持关系接下所有请求，也别把客气当成明确承诺。'), evidence: [...groups.peer, ...groups.resource.slice(0, 2)], opportunities: ['从一个范围清楚的小项目开始合作，比一开始就绑定很多事情更容易看清彼此。'], publicAdvice: '一起做事前，先讲清分工、报酬和遇到分歧时怎么决定。', cautions: ['比劫不直接等于朋友夺财，印星也不保证一定有人相助。'] },
   };
   const dimensions = DIMENSIONS.map(({ id, title }) => {
     const value = configs[id];
-    return { id, title, ...value, evidence: value.evidence.length ? value.evidence : [evidence('F00-insufficient', '这一维度缺少足够的直接原局证据，保留为现实背景核对项。')], cautions: [...value.cautions, ...common], confidence: '传统规则支持度，非统计概率' };
+    return { id, title, publicTitle: PUBLIC_TITLES[id], ...value, evidence: value.evidence.length ? value.evidence : [evidence('F00-insufficient', '这一维度缺少足够的直接原局证据，保留为现实背景核对项。')], cautions: [...value.cautions, ...common], confidence: '传统规则支持度，非统计概率' };
   });
   return {
-    version: RULE_VERSION, summary: `${dm}${dmElement}日主，月令${month.branch}；${candidate}，旺衰暂列${tendency}。${hasGroup('resource') ? '学习与支持资源' : '现实技能与资源配置'}可作为分析入口，具体层次须结合制化条件及现实背景。`,
+    version: RULE_VERSION, summary: `${mainRoute}${secondStrength}${paceAdvice}`,
     dayMaster: dm, pattern, strength, dimensions, relations, groups,
     methodology: '月令立候选、根气与透干辨强弱，合冲刑害只作结构证据；各项判断均是明示规则的传统解释。',
     limitations: ['本规则集为首版简化子平框架，尚未覆盖全部格局成败、调候与特殊从化条件。', '排盘可复核不等于现实事件预测有效；解释和评分未经统计预测效度验证。'],

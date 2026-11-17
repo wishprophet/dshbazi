@@ -1,7 +1,7 @@
 {
   "name": "dsh-bazi",
-  "version": "0.1.0",
-  "description": "DeepSeek Harness 四柱八字插件：免登录网站排盘、本地校验、十二维度分析与人生 K 线，内置 skill",
+  "version": "0.1.1",
+  "description": "DeepSeek Harness 八字插件：网站排盘、十二方面批语与人生趋势折线，内置 skill",
   "type": "module",
   "main": "./src/plugin.js",
   "exports": { ".": "./src/plugin.js", "./core": "./src/service.js", "./report": "./src/report.js", "./package.json": "./package.json" },

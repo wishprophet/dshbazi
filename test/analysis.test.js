@@ -14,7 +14,7 @@ test('analysis produces all twelve grounded dimensions and keeps tentative patte
   const result = analyzeChart(chart, input);
   assert.deepEqual(result.dimensions.map(d => d.id), DIMENSIONS.map(d => d.id));
   for (const d of result.dimensions) {
-    assert.ok(d.summary && d.opportunities.length && d.cautions.length);
+    assert.ok(d.summary && d.publicTitle && d.publicAdvice && d.opportunities.length && d.cautions.length);
     assert.ok(d.evidence.every(e => e.ruleId && e.text));
   }
   assert.match(result.pattern.status, /候选/);
@@ -22,7 +22,10 @@ test('analysis produces all twelve grounded dimensions and keeps tentative patte
   const clone = structuredClone(chart);
   clone.elementCounts = { 木: 900, 火: 0, 土: 0, 金: 0, 水: 0 };
   assert.deepEqual(analyzeChart(clone).strength, result.strength, 'surface element counts must not decide strength');
-  assert.match(result.dimensions.find(d => d.id === 'wellbeing').summary, /不推断疾病、寿命/);
+  assert.match(result.dimensions.find(d => d.id === 'wellbeing').cautions.join(''), /不能用于医学诊断/);
+  const publicCopy = [result.summary, ...result.dimensions.flatMap(d => [d.publicTitle, d.summary, d.publicAdvice, ...d.opportunities])].join('\n');
+  assert.doesNotMatch(publicCopy, /免责声明|规则集|接口|不推断疾病|不等于社会阶层|候选|旺衰|日主|月令/);
+  assert.ok(result.summary.split('。').filter(Boolean).length >= 2);
 });
 
 test('analysis preserves calendar-provided hidden-stem order and facts', () => {
@@ -62,7 +65,12 @@ test('K candles derive OHLC exactly from real monthly values, reproducibly', () 
       assert.equal(candle.open, values[0]); assert.equal(candle.close, values[11]);
       assert.equal(candle.high, Math.max(...values)); assert.equal(candle.low, Math.min(...values));
     }
-    for (const event of y.events) assert.ok(event.condition && event.evidence.length && event.window.length && event.verification);
+    for (const event of y.events) {
+      assert.ok(event.condition && event.evidence.length && event.window.length && event.verification);
+      assert.ok(event.publicTitle && event.reading);
+      assert.doesNotMatch(event.reading, /证据|核验|验证方式|统计概率|启发式|模型|本规则集|支持主题|标记不适用/);
+      assert.ok(event.reading.split('。').filter(Boolean).length <= 3);
+    }
   }
 });
 
@@ -107,4 +115,13 @@ test('real background changes scenarios only in its declared year, never scores'
   const retired = buildTimeline(chart, { ...input, contextYear: 2026, context: { occupation: '已经退休', plans: '装修房屋' } }).years.find(y => y.year === 2026);
   assert.ok(!retired.events.some(e => e.domain === 'career'));
   assert.ok(retired.events.some(e => e.domain === 'home' && e.backgroundApplied));
+  assert.ok(retired.events.some(e => e.domain === 'home' && /装修/.test(e.publicTitle + e.reading)));
+});
+
+test('plain-language readings vary with chart structure and keep advice separate', () => {
+  const first = fixture(), second = fixture({ date: '1990-05-18', time: '09:00' });
+  const a = analyzeChart(first.chart, first.input), b = analyzeChart(second.chart, second.input);
+  assert.notEqual(a.summary, b.summary);
+  assert.ok(a.dimensions.filter((d, i) => d.summary !== b.dimensions[i].summary).length >= 3);
+  assert.ok(a.dimensions.every(d => d.publicAdvice !== d.summary && !d.opportunities.includes(d.publicAdvice)));
 });

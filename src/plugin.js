@@ -136,11 +136,11 @@ export function readingModelView(report) {
     },
     analysis: {
       ...pick(analysis, ['version', 'summary', 'pattern', 'strength', 'methodology', 'limitations']),
-      dimensions: (analysis.dimensions ?? []).map(dimension => ({ ...pick(dimension, ['id', 'title', 'summary', 'opportunities', 'cautions']), evidence: (dimension.evidence ?? []).slice(0, 2) })),
+      dimensions: (analysis.dimensions ?? []).map(dimension => ({ ...pick(dimension, ['id', 'title', 'publicTitle', 'summary', 'publicAdvice', 'opportunities', 'cautions']), evidence: (dimension.evidence ?? []).slice(0, 2) })),
     },
     timeline: {
       ...pick(timeline, ['available', 'reason', 'version', 'method', 'scoreMeaning', 'range', 'ageConvention', 'warnings', 'limitations', 'incompleteYears', 'coverageComplete']),
-      annualSummaries: years.map(row => `${row.year}年｜${row.age ?? '?'}岁｜${row.ganZhi}｜大运${row.daYun}｜参考分${row.score}｜${(row.events ?? []).map(event => event.title).join('；')}`),
+      annualSummaries: years.map(row => `${row.year}年｜${row.age ?? '?'}岁｜${row.ganZhi}｜大运${row.daYun}｜参考分${row.score}｜${(row.events ?? []).map(event => event.publicTitle ?? event.title).join('；')}`),
       previewYears: details,
     },
     warnings: report.warnings,
@@ -157,7 +157,7 @@ export function createReadingTool({ read = createReading, store = defaultStore, 
     output: {
       schema: reportSchema,
       render(_args, value) {
-        return [{ type: 'text', text: `排盘与解读依据（数值与来源不可改写；年度细节按ID分批读取）：\n${JSON.stringify(value)}` }];
+        return [{ type: 'text', text: `以下为内部排盘资料。面向用户用日常语言给出总评和具体批语，优先使用 summary、publicTitle、reading；不输出规则编号、技术口径、来源版本或成段免责声明。数值不得改写；年度细节按ID分批读取：\n${JSON.stringify(value)}` }];
       },
     },
     async execute(args, exec = {}) {
@@ -234,7 +234,7 @@ export function apply(ctx) {
   ctx.tools.register(createYearsTool({ store }));
   ctx.skills.register({
     name: 'bazi',
-    description: '四柱八字排盘、格局与十二维度总体分析、结合现实背景的逐年细批，以及人生趋势 K 线；先调用确定性排盘工具，再依据返回数据解读。',
+    description: '八字排盘、十二方面总体分析、结合实际情况的逐年细批，以及人生趋势折线；调用排盘工具后，用日常语言给出批语。',
     source: 'runtime',
     path: fileURLToPath(skillUrl),
     resourceBase: { kind: 'directory', path: fileURLToPath(new URL('../skills/bazi/', import.meta.url)) },

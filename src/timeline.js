@@ -1,8 +1,8 @@
 import { analyzeChart, chartColumns, tenGod, godGroup, branchRelations, HIDDEN, STEMS, BRANCHES, RULE_VERSION } from './analysis.js';
 
 export const TREND_DOMAINS = [
-  { id: 'career', title: '职业责任' }, { id: 'wealth', title: '资源财务' }, { id: 'relationship', title: '关系协商' },
-  { id: 'study', title: '学习表达' }, { id: 'mobility', title: '环境变化' }, { id: 'home', title: '居住安排' },
+  { id: 'career', title: '事业工作' }, { id: 'wealth', title: '收入积累' }, { id: 'relationship', title: '感情婚姻' },
+  { id: 'study', title: '学习考试' }, { id: 'mobility', title: '外出变动' }, { id: 'home', title: '住房家产' },
 ];
 const round = n => Math.round(n * 10) / 10;
 const clamp = n => Math.min(95, Math.max(5, round(n)));
@@ -87,6 +87,70 @@ function monthSegments(month, cycles, fallback) {
   return { precise: true, segments };
 }
 
+function publicEventReading({ id, high, selected, age, year, student, retired, single, partnered, occupation, plans, priorities }) {
+  const friction = selected.some(m => m.contributions.some(c => c.domain === id && c.ruleId === 'T03-branch-friction'));
+  const seeking = /待业|失业|求职|找工作/.test(occupation);
+  const moving = priorities.mobility && /搬家|搬迁|迁居/.test(plans);
+  const decorating = priorities.home && /装修/.test(plans);
+  const buying = priorities.home && /买房|购房|置业/.test(plans);
+  const dating = single || (priorities.relationship && /相亲|恋爱/.test(plans) && !partnered);
+  const publicTitles = {
+    career: seeking ? '找工作与岗位选择' : high ? '工作上争取更多发挥空间' : '工作安排需要多些协调',
+    wealth: high ? '把收入落到实际到账' : '给支出和回款留出余地',
+    relationship: dating ? '认识新人，慢慢看清是否合适' : high ? '把感情往共同生活上推进' : '相处中的分工要重新商量',
+    study: age < 7 ? '养成稳定的学习和生活习惯' : high ? '把学习变成一份拿得出的成果' : '学习计划适合收拢重点',
+    mobility: moving ? '搬家与生活衔接' : high ? '外出和换环境的安排增多' : '出行安排以稳妥为先',
+    home: decorating ? '装修进度与预算' : buying ? '买房前把预算和需求谈妥' : retired ? '把家里的安排理顺' : '住处与家庭安排',
+  };
+  let body;
+  if (id === 'career') {
+    body = seeking
+      ? (high ? '找工作时可以把重点放在能直接发挥经验的岗位，简历和面试尽量用已经做成的事情说话。' : '找工作适合收窄目标，先看职责和自己能否匹配，别因等待着急就接下条件不清的岗位。')
+      : (high ? '如果当年在职，较值得争取的是独立负责一项任务、接手项目，或把现有成果做得更有分量。' : '如果当年在职，项目交接、任务分工或考核要求可能需要多沟通几次，先把完成标准说清楚，能减少返工。');
+    if (high && friction) body += '机会来时也会带来协调工作，接下之前先谈清分工。';
+  } else if (id === 'wealth') {
+    body = high
+      ? '有项目收入、经营回款或合同结算时，这一年适合把验收和收款盯紧，把已经做完的事情真正结到账上。'
+      : '有回款和大额开销时，这一年更要错开时间安排，别让尚未到账的钱先被支出占满。';
+    body += high ? '谈新合作时，付款节奏和实际能留下多少，比表面金额更值得细看。' : '合作分摊、临时加项和付款条件，提前讲清会省不少心。';
+  } else if (id === 'relationship') {
+    body = dating
+      ? (high ? '有相亲或新交往安排时，可以多见面、多一起做些日常的事，关系更容易在实际相处中往前走。' : '有新交往安排时，先看相处是否舒服、双方投入是否一致，别急着因为一时热情就作长期承诺。')
+      : (high ? `${partnered ? '和伴侣相处时' : '如果当年已有伴侣'}，适合把共同安排谈得更具体，比如住在哪里、钱怎么分配、双方各承担什么。` : `${partnered ? '和伴侣相处时' : '如果当年已有伴侣'}，时间分配、花钱或家务分工容易成为需要重新商量的地方，别把不满一直攒着。`);
+    if (high && friction) body += '有不同意见时先解决眼前的事，不必马上争出谁对谁错。';
+  } else if (id === 'study') {
+    if (age < 7) body = '这一年更适合让家人帮着建立规律的作息和活动安排，通过游戏、阅读和动手慢慢培养兴趣，不必把日常学习排得太满。';
+    else {
+      const opening = student ? '在读期间' : priorities.study ? '围绕已有的学习或考试计划' : '如果当年有课程、考试或资格申请';
+      body = high ? `${opening}，适合按进度把学习落实到练习、论文或作品上，做完一项就及时提交、争取反馈。` : `${opening}，需要防止任务排得太满，先保住最重要的一门考试或一份材料，再安排额外的学习。`;
+      body += high ? '临近提交或考试时，留时间检查格式、材料和时间安排。' : '遇到补材料、返修或计划调整时，提前留几天余量会更从容。';
+    }
+  } else if (id === 'mobility') {
+    body = moving
+      ? (high ? '你已有搬家的打算，这一年适合把找住处、搬迁和工作衔接一步步落实，别只顾着搬完，还要考虑住下后的日常节奏。' : '你已有搬家的打算，时间安排上适合留些余地，住处、费用和工作衔接谈妥后再定最后日期。')
+      : (high ? '若有出差、求学或异地项目的安排，这一年外出的事情可能比较集中，也更容易接触新的人和做事方式。' : '若有出差、求学或异地安排，适合围绕明确的事情去走，先落实手续和接应，避免临时反复改行程。');
+    if (high && !moving) body += '提前留出交通、住宿和工作交接的时间，变化来了会更从容。';
+  } else {
+    body = decorating
+      ? (high ? '已有装修计划时，适合把预算、施工顺序和验收时间一起落实，先做最影响日常使用的部分。' : '已有装修计划时，容易需要在预算、工期或具体做法上反复协调，变更项目先确认价格再开工。')
+      : buying
+        ? '已有买房计划时，先把长期月供、通勤和家庭成员的需要一起算清，再决定具体选择，别只被一时喜欢的房子带着走。'
+        : (high ? '有租约、居住或照料家人的安排时，这一年适合把事情逐项落实，让家里的日常节奏更稳定。' : '有租约、居住或照料家人的安排时，预算和分工可能需要多商量几次，先定谁负责什么，事情会更好推进。');
+    if (retired && !decorating && !buying) body += '也给自己的活动和休息留出位置，别把日常全排成替家人忙碌。';
+  }
+  const dateLabel = (value, includeYear = false) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
+    if (!match) return null;
+    return `${includeYear || Number(match[1]) !== year ? match[1] + '年' : ''}${Number(match[2])}月${Number(match[3])}日`;
+  };
+  const ranges = selected.map(m => {
+    const start = dateLabel(m.startDate), end = dateLabel(m.endDate);
+    return start && end ? `${start}至${end}` : null;
+  }).filter(Boolean);
+  const timing = ranges.length ? `${ranges.join('、')}这两段时间，可以把相关安排多留意一下。` : '';
+  return { publicTitle: publicTitles[id], reading: body + timing };
+}
+
 function annualEvents(yearData, analysis, input) {
   const months = yearData.months;
   const domainAverage = id => months.reduce((sum, m) => sum + m.domainScores[id], 0) / months.length;
@@ -141,7 +205,8 @@ function annualEvents(yearData, analysis, input) {
     let condition = t.condition;
     if (id === 'relationship' && partnered) condition = '若你提供的伴侣关系在当年持续，且确有共同安排或分工需要协商';
     if (id === 'relationship' && single) condition = '你目前单身；若当年实际开始相亲或认真交往，才适用本条关系进展情景';
-    return { domain: id, title: t.title, condition, scenario: (contextNotes.length ? contextNotes.join('；') + '。' : '') + (high ? t.positive : t.negative), window: selected.map(m => ({ monthIndex: m.index, ganZhi: m.ganZhi, startDate: m.startDate || null, endDate: m.endDate || null })), evidence: facts, counterEvidence: '如果没有上述现实前提，此情景不适用；支持主题不保证事件发生。', verification: t.outcome, support: '按明示传统规则排序，非发生概率', backgroundApplied: contextNotes.length > 0, contextYear: contextNotes.length ? contextYear : null, contextScope: contextNotes.length ? { startYear: contextYear, endYear: contextYear, description: '当前背景仅用于明确的参考年，不反推其他年份的经历。' } : null };
+    const publicReading = publicEventReading({ id, high, selected, age, year: yearData.year, student, retired, single, partnered, occupation, plans, priorities });
+    return { domain: id, title: t.title, ...publicReading, condition, scenario: (contextNotes.length ? contextNotes.join('；') + '。' : '') + (high ? t.positive : t.negative), window: selected.map(m => ({ monthIndex: m.index, ganZhi: m.ganZhi, startDate: m.startDate || null, endDate: m.endDate || null })), evidence: facts, counterEvidence: '如果没有上述现实前提，此情景不适用；支持主题不保证事件发生。', verification: t.outcome, support: '按明示传统规则排序，非发生概率', backgroundApplied: contextNotes.length > 0, contextYear: contextNotes.length ? contextYear : null, contextScope: contextNotes.length ? { startYear: contextYear, endYear: contextYear, description: '当前背景仅用于明确的参考年，不反推其他年份的经历。' } : null };
   });
 }
 
