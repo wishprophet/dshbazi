@@ -1,0 +1,11 @@
+{
+  "name": "示例命主",
+  "gender": "male",
+  "location": "北京",
+  "calendar": "solar",
+  "date": "2000-01-01",
+  "time": "12:34",
+  "startYear": 2024,
+  "endYear": 2035,
+  "context": { "occupation": "在职", "relationship": "未提供", "plans": "关注岗位发展与学习进修" }
+}

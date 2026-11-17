@@ -1,0 +1,80 @@
+{
+  "input": {
+    "name": "接口测试",
+    "gender": "male",
+    "calendar": "solar",
+    "date": "2000-01-01",
+    "time": "12:34",
+    "leapMonth": false,
+    "location": ""
+  },
+  "fetchedAt": "2026-11-16T23:36:30.060Z",
+  "url": "https://zydx.top/paipan.php",
+  "save": false,
+  "sanitization": "Removed script elements and trimmed trailing line whitespace; synthetic birth input.",
+  "expected": {
+    "pillars": {
+      "year": "己卯",
+      "month": "丙子",
+      "day": "戊午",
+      "hour": "戊午"
+    },
+    "startLuck": {
+      "date": "2008-03-18 04:34:00",
+      "age": {
+        "years": 8,
+        "months": 2,
+        "days": 16,
+        "hours": 16
+      },
+      "forward": false
+    },
+    "cycles": [
+      {
+        "pillar": "乙亥",
+        "startYear": 2008,
+        "startAge": 8
+      },
+      {
+        "pillar": "甲戌",
+        "startYear": 2018,
+        "startAge": 18
+      },
+      {
+        "pillar": "癸酉",
+        "startYear": 2028,
+        "startAge": 28
+      },
+      {
+        "pillar": "壬申",
+        "startYear": 2038,
+        "startAge": 38
+      },
+      {
+        "pillar": "辛未",
+        "startYear": 2048,
+        "startAge": 48
+      },
+      {
+        "pillar": "庚午",
+        "startYear": 2058,
+        "startAge": 58
+      },
+      {
+        "pillar": "己巳",
+        "startYear": 2068,
+        "startAge": 68
+      },
+      {
+        "pillar": "戊辰",
+        "startYear": 2078,
+        "startAge": 78
+      },
+      {
+        "pillar": "丁卯",
+        "startYear": 2088,
+        "startAge": 88
+      }
+    ]
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "input": {
+    "name": "接口测试",
+    "gender": "female",
+    "calendar": "lunar",
+    "date": "2023-02-01",
+    "time": "12:00",
+    "leapMonth": true,
+    "location": ""
+  },
+  "fetchedAt": "2026-11-16T23:36:30.283Z",
+  "url": "https://zydx.top/paipan.php",
+  "save": false,
+  "sanitization": "Removed script elements and trimmed trailing line whitespace; synthetic birth input.",
+  "expected": {
+    "pillars": {
+      "year": "癸卯",
+      "month": "乙卯",
+      "day": "己卯",
+      "hour": "庚午"
+    },
+    "startLuck": {
+      "date": "2027-11-07 16:00:00",
+      "age": {
+        "years": 4,
+        "months": 7,
+        "days": 16,
+        "hours": 4
+      },
+      "forward": true
+    },
+    "cycles": [
+      {
+        "pillar": "丙辰",
+        "startYear": 2027,
+        "startAge": 4
+      },
+      {
+        "pillar": "丁巳",
+        "startYear": 2037,
+        "startAge": 14
+      },
+      {
+        "pillar": "戊午",
+        "startYear": 2047,
+        "startAge": 24
+      },
+      {
+        "pillar": "己未",
+        "startYear": 2057,
+        "startAge": 34
+      },
+      {
+        "pillar": "庚申",
+        "startYear": 2067,
+        "startAge": 44
+      },
+      {
+        "pillar": "辛酉",
+        "startYear": 2077,
+        "startAge": 54
+      },
+      {
+        "pillar": "壬戌",
+        "startYear": 2087,
+        "startAge": 64
+      },
+      {
+        "pillar": "癸亥",
+        "startYear": 2097,
+        "startAge": 74
+      },
+      {
+        "pillar": "甲子",
+        "startYear": 2107,
+        "startAge": 84
+      }
+    ]
+  }
+}

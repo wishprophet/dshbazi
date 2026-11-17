@@ -1,0 +1,11 @@
+{
+  "name": "农历示例",
+  "gender": "female",
+  "location": "上海",
+  "calendar": "lunar",
+  "date": "1990-05-12",
+  "time": "08:30",
+  "leapMonth": false,
+  "startYear": 2026,
+  "endYear": 2030
+}

@@ -1,0 +1,21 @@
+{
+  "name": "dsh-bazi",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness 四柱八字插件：免登录网站排盘、本地校验、十二维度分析与人生 K 线，内置 skill",
+  "type": "module",
+  "main": "./src/plugin.js",
+  "exports": { ".": "./src/plugin.js", "./core": "./src/service.js", "./report": "./src/report.js", "./package.json": "./package.json" },
+  "bin": { "dsh-bazi": "./src/cli.js" },
+  "files": ["src", "skills", "examples", "scripts", "README.md", "LICENSE", "NOTICE", "docs", "cordis.patch.yml"],
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "demo": "node src/cli.js --input examples/solar.json --provider local --out reports/example",
+    "verify:website": "node scripts/verify-website.js",
+    "prepack": "node scripts/check-package.js"
+  },
+  "engines": { "node": ">=22", "dsh": ">=0.2.2-rc.3 <0.3.0" },
+  "dependencies": { "lunar-javascript": "1.7.8" },
+  "keywords": ["dsh", "dsh-plugin", "bazi", "八字", "skill", "deepseek-harness"],
+  "license": "MIT"
+}

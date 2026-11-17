@@ -1,0 +1,7 @@
+{
+  "name": "四柱示例",
+  "gender": "male",
+  "location": "北京",
+  "calendar": "pillars",
+  "pillars": { "year": "己卯", "month": "丙子", "day": "戊午", "hour": "戊午" }
+}

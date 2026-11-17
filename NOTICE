@@ -1,0 +1,13 @@
+dsh-bazi uses lunar-javascript 1.7.8 (6tail, MIT License) through its public API.
+The dependency and its original license are distributed by npm.
+https://github.com/6tail/lunar-javascript
+
+The optional online provider requests https://zydx.top/paipan.php with save=0.
+No website application code is redistributed. Website chart data remains
+attributed to 周易大学堂 in generated results. No affiliation is claimed.
+
+DeepSeek Harness integration follows its public plugin/tool/skill interfaces.
+https://github.com/deepseek-ai/deepseek-harness
+
+Analysis and trend scores are original, documented traditional-rule heuristics,
+not empirically calibrated probabilities or guarantees of future events.
