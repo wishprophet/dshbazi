@@ -138,80 +138,167 @@ function publicEventReading({ id, high, selected, age, year, student, retired, s
         : (high ? '有租约、居住或照料家人的安排时，这一年适合把事情逐项落实，让家里的日常节奏更稳定。' : '有租约、居住或照料家人的安排时，预算和分工可能需要多商量几次，先定谁负责什么，事情会更好推进。');
     if (retired && !decorating && !buying) body += '也给自己的活动和休息留出位置，别把日常全排成替家人忙碌。';
   }
-  const dateLabel = (value, includeYear = false) => {
-    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
-    if (!match) return null;
-    return `${includeYear || Number(match[1]) !== year ? match[1] + '年' : ''}${Number(match[2])}月${Number(match[3])}日`;
-  };
-  const ranges = selected.map(m => {
-    const start = dateLabel(m.startDate), end = dateLabel(m.endDate);
-    return start && end ? `${start}至${end}` : null;
-  }).filter(Boolean);
-  const timing = ranges.length ? `${ranges.join('、')}这两段时间，可以把相关安排多留意一下。` : '';
-  return { publicTitle: publicTitles[id], reading: body + timing };
+  return { publicTitle: publicTitles[id], reading: body };
 }
 
-function annualEvents(yearData, analysis, input) {
-  const months = yearData.months;
-  const domainAverage = id => months.reduce((sum, m) => sum + m.domainScores[id], 0) / months.length;
-  const age = yearData.age;
-  const contextYear = Number(input.contextYear);
-  const suppliedContext = input.context || input.background || {};
-  const contextApplies = yearData.year === contextYear && typeof suppliedContext === 'object';
-  const context = contextApplies ? suppliedContext : {};
-  const occupation = String(context.occupation || context.stage || context.employmentStatus || '');
-  const relationship = String(context.relationship || '');
-  const plans = String(context.plans || '');
-  const retired = /退休|retired/i.test(occupation);
-  const student = /学生|在读|本科|研究生|中学|小学|student/i.test(occupation) && !/在职/.test(occupation);
-  const single = /单身|未婚且无|没有伴侣|无伴侣|single/i.test(relationship) && !/非单身|不再单身/.test(relationship);
-  const partnered = /已婚|有伴侣|恋爱中|已订婚|married|partnered/i.test(relationship) && !single;
-  const priorities = {
-    career: /工作|岗位|晋升|升职|调动|项目|创业|跳槽|求职|入职/.test(plans),
-    wealth: /回款|结算|财务|收入|支出|预算|投资|创业/.test(plans),
-    relationship: /结婚|恋爱|相亲|婚姻|伴侣|交往/.test(plans),
-    study: /考试|考研|考公|考证|进修|学习|课程|培训|资格|职称|论文|作品|入学/.test(plans),
-    mobility: /出差|搬家|搬迁|迁居|异地|留学|出国|通勤/.test(plans),
-    home: /房|装修|租约|租房|置业|家人|照料|家庭/.test(plans),
+// Event support is kept separate from the six trend scores. It measures a
+// traditional structural change, never event probability or remaining lifetime.
+export const EVENT_DOMAINS = [
+  ['pattern','整体发展'],['career','事业工作'],['wealth','收入积累'],['family','父母家人'],
+  ['relationship','感情婚姻'],['study','学习考试'],['wellbeing','身心状态'],['mobility','外出变动'],
+  ['home','住房家产'],['disputes','合同纠纷'],['character','性格做事'],['network','人际合作'],
+].map(([id,title])=>({id,title}));
+const ROLE_DOMAINS = {
+  peer:{network:1.8,wealth:.8,character:1.2},output:{career:1,study:.8,character:1.5},
+  wealth:{wealth:1.8,home:1.1,relationship:.7},authority:{career:1.8,disputes:1.1},
+  resource:{study:1.8,family:1.2,home:.7},
+};
+const PALACE_DOMAINS = {
+  year:{family:1,home:.5},month:{career:.9,study:.6,disputes:.5},
+  day:{relationship:1,home:.65},hour:{family:.7,character:.4},
+};
+const relationWeight = relation => ({冲:3,刑:2.2,害:1.6,合:1.6,伏吟:1.3})[relation]||0;
+function structuralSignals(pillar, columns, analysis, label, luckPillars=[]) {
+  const map=Object.fromEntries(EVENT_DOMAINS.map(d=>[d.id,{id:d.id,support:0,friction:0,evidence:[]}]));
+  if(!validPillar(pillar)||!columns.length)return map;
+  const add=(id,value,ruleId,text,friction=false)=>{
+    const target=map[id];if(!target||target.evidence.some(e=>e.ruleId===ruleId&&e.text===text))return;
+    target.support+=value;if(friction)target.friction+=value;target.evidence.push({ruleId,text});
   };
-  let candidates = ['career', 'wealth', 'relationship', 'study', 'mobility', 'home'];
-  if (Number.isFinite(age) && age < 18) candidates = ['study', 'mobility', 'home'];
-  if (retired) candidates = ['home', 'study', 'mobility', 'relationship'];
-  if (student) candidates = ['study', 'mobility', 'home', 'relationship'];
-  if (single && !priorities.relationship) candidates = candidates.filter(id => id !== 'relationship');
-  const templates = {
-    career: { title: '岗位职责、项目分工或考核安排调整', condition: '若当年在职，并已有项目交接、组织调整或考核安排', positive: '关注职责扩大、项目交付和资格带来的岗位机会；先核对是否确有任命或项目安排。', negative: '优先核对任务边界、考核标准与交接责任；变化可表现为返工或协作方式调整。', outcome: '记录实际岗位、职责、项目负责人或考核要求是否发生变化。' },
-    wealth: { title: '回款、合同结算或计划内大额支出', condition: '若当年有劳动收入、经营合同、回款或已确定的大额支出计划', positive: '关注明确合同的验收与结算窗口，区分账面收入和实际到账。', negative: '关注结算拖延、支出集中和合作分摊，需以真实账目判断。', outcome: '记录合同金额、应收与实际到账日期，或支出是否集中发生；不预设收益率。' },
-    relationship: { title: '关系定位、共同安排与分工协商', condition: '若当年已有伴侣或正在认真交往；若单身，则仅在确有交往对象时适用', positive: '可观察关系确认、共同居住计划或双方安排能否推进。', negative: '可观察时间分配、共同财务或居住安排是否出现需要重新协商的事项。', outcome: '记录明确的关系进展或协商议题；没有交往对象时标记不适用。' },
-    study: { title: '课程、考试、资格申请或作品提交', condition: '若当年在读，或已报名课程、考试、资格申请、作品评审', positive: '关注课程完成、材料提交、评审反馈与成果展示的窗口。', negative: '关注备考计划调整、补交材料和学习与其他任务的冲突。', outcome: '记录报名、提交、反馈和结果；未报名或无学习计划时不算作命中。' },
-    mobility: { title: '出差、搬迁、异地项目或通勤变化', condition: '若当年因学业、工作或家庭已有出行、迁居或异地安排', positive: '变化主题较活跃，可核对是否出现新增出差、换地点或通勤调整。', negative: '变化主题较弱，优先关注已有安排是否延后或缩小范围。', outcome: '记录实际地点、出行次数或居住安排的变化；不预测具体目的地。' },
-    home: { title: '租约、装修、居住分工或家庭预算调整', condition: '若当年有租约到期、装修、搬家、照料家人或置业计划', positive: '可关注手续推进、居住稳定和家庭分工落实。', negative: '可关注预算、工期、租约条款或家庭成员安排的协调成本。', outcome: '记录实际签约、开工、入住或家庭分工调整；没有相关计划时标记不适用。' },
+  const dm=analysis.dayMaster,groups=new Set(),frictionContacts=[];
+  for(const [stem,factor] of [[pillar[0],1],[HIDDEN[pillar[1]][0],.65]]){
+    const group=godGroup(tenGod(dm,stem));groups.add(group);
+    if(!(analysis.groups?.[group]?.length))continue;
+    const repeats=columns.some(c=>c.key!=='day'&&c.stem===stem);
+    for(const [id,value] of Object.entries(ROLE_DOMAINS[group]||{}))
+      add(id,value*factor*(repeats?1.5:1),'E01-role-activation',`${label}${pillar}的${stem}为${tenGod(dm,stem)}，原局有同类十神${repeats?'且同干透出':''}。`);
+  }
+  for(const col of columns){
+    const relations=branchRelations(pillar[1],col.branch);
+    if(pillar[1]===col.branch&&!relations.length)relations.push('伏吟');
+    for(const relation of relations){
+      const value=relationWeight(relation),friction=['冲','刑','害'].includes(relation);
+      const text=`${label}${pillar}与原局${col.label}${col.ganZhi}地支${relation}。`;
+      if(friction)frictionContacts.push({col,relation,text});
+      for(const [id,factor] of Object.entries(PALACE_DOMAINS[col.key]||{}))add(id,value*factor,'E02-palace-contact',text,friction);
+      if(relation==='冲')add('mobility',2.4,'E03-movement',text,true);
+      if(relation==='合'&&['year','month'].includes(col.key))add('network',1.7,'E04-cooperation',text);
+    }
+  }
+  if(pillar[0]===dm)add('character',1.8,'E12-self-direction',`${label}天干${pillar[0]}与日干相同，自主决定与个人做事方式主题较突出。`);
+  const has=group=>Boolean(analysis.groups?.[group]?.length);
+  if((groups.has('output')&&has('authority'))||(groups.has('authority')&&has('output')))
+    add('disputes',2.4,'E05-expression-and-rules',`${label}${pillar}引出表达、执行与规章之间的协调主题，原局食伤与官杀相关。`,true);
+  if(groups.has('peer')&&has('peer'))add('network',1,'E06-peer-activation',`${label}${pillar}比劫与原局同类叠见，合作、同辈分工主题增加。`);
+  if(frictionContacts.length>=2){
+    const distinct=new Set(frictionContacts.map(x=>x.col.key)).size;
+    if(distinct>=2)add('wellbeing',2+distinct*.6,'E07-pace-pressure',`${label}同时触及${distinct}处宫位，日常安排与休息节奏可能相互挤占。`,true);
+    if(frictionContacts.some(x=>x.col.key==='month'))add('disputes',1.2,'E08-multiple-frictions',`${label}多处关系变化涉及月柱，交接与分工需要重新协调。`,true);
+  }
+  for(const luck of luckPillars){
+    if(!validPillar(luck))continue;
+    const role=godGroup(tenGod(dm,luck[0]));
+    if(groups.has(role)&&has(role))for(const [id,value] of Object.entries(ROLE_DOMAINS[role]||{}))add(id,value*.55,'E09-luck-year-role',`${label}${pillar}与大运${luck}有同类十神主题。`);
+    for(const relation of branchRelations(pillar[1],luck[1]))add('pattern',relationWeight(relation),'E10-luck-year-contact',`${label}${pillar}与大运${luck}地支${relation}。`,relation!=='合');
+  }
+  return map;
+}
+function eventContext(yearData,input){
+  const applies=yearData.year===Number(input.contextYear);
+  const context=applies?(input.context||input.background||{}):{};
+  const occupation=String(context.occupation||context.stage||context.employmentStatus||'');
+  const relationship=String(context.relationship||''),plans=String(context.plans||'');
+  const priorities=Object.fromEntries(Object.entries({
+    pattern:/转型|重新规划|人生方向/,career:/工作|岗位|晋升|项目|创业|跳槽|求职|入职/,
+    wealth:/回款|结算|财务|收入|支出|预算|投资/,family:/父母|长辈|孩子|子女|照料|探亲/,
+    relationship:/结婚|恋爱|相亲|婚姻|伴侣|交往/,study:/考试|考研|考公|考证|进修|学习|课程|资格|职称|论文|作品|入学/,
+    wellbeing:/休息|作息|压力|加班|运动/,mobility:/出差|搬家|搬迁|迁居|异地|留学|出国|通勤/,
+    home:/房|装修|租约|租房|置业/,disputes:/合同|纠纷|争议|诉讼|赔偿/,
+    character:/习惯|表达|做事方式/,network:/合作|合伙|朋友|团队|分工/,
+  }).map(([id,re])=>[id,re.test(plans)]));
+  const single=/单身|未婚且无|没有伴侣|无伴侣|single/i.test(relationship)&&!/非单身|不再单身/.test(relationship);
+  return {occupation,relationship,plans,priorities,single,partnered:/已婚|有伴侣|恋爱中|已订婚|married|partnered/i.test(relationship)&&!single,
+    retired:/退休|retired/i.test(occupation),student:/学生|在读|本科|研究生|中学|小学|student/i.test(occupation)&&!/在职/.test(occupation),applies};
+}
+const MONTH_READINGS={
+  pattern:['工作、生活安排可能同时进入调整阶段，原先的优先顺序需要重排。','前面酝酿的安排较容易进入落实阶段，发展方向逐渐清楚。'],
+  career:['岗位分工、任务交接或考核要求较容易变化，留意返工与职责不清。','承担新任务、项目交付或岗位争取较容易成为这个阶段的重点。'],
+  wealth:['付款、回款与临时支出容易碰在一起，资金安排可能比平时紧。','已有项目的验收、回款或收入结算较值得关注。'],
+  family:['家人之间可能需要重新分配照料、探望或日常事务，时间安排容易有分歧。','家中共同事务、探望或照料安排较容易推进，长辈与晚辈的往来增多。'],
+  relationship:['相处中的时间、花钱和共同安排较容易出现分歧，需要把事情重新谈清。','交往关系的确认、共同计划或双方家庭的沟通较容易推进。'],
+  study:['课程、考试或材料提交较容易遇到调整，重点留意补交、返修和截止时间。','学习成果、考试准备或资格材料较容易进入提交和反馈阶段。'],
+  wellbeing:['事务集中时，休息与个人安排容易被挤占，忙碌后的恢复节奏值得留意。','生活节奏较容易重新稳定，原先被打断的休息和活动安排有机会恢复。'],
+  mobility:['行程、通勤或异地安排较容易改动，注意交通、住处和交接的衔接。','外出、换地点或接触新环境的安排较容易集中出现。'],
+  home:['住处、租约、维修或家务分工可能出现需要协调的事项，预算和时间容易反复。','居住安排、家中手续或已有改造计划较容易进入落实阶段。'],
+  disputes:['口头约定、责任划分或交付标准较容易产生不同理解，变更要落实到文字。','原先悬而未决的分工、条款或交接问题较容易谈出具体办法。'],
+  character:['容易因事情催得急而说话直接、临时改变主意，决定后还可能需要回头调整。','做事方式更容易出现主动调整，表达观点、独立决定的机会增多。'],
+  network:['合作分工、利益分配或朋友间的承诺较容易重新商量，原有配合方式可能改变。','同事、同行或朋友之间的协作增多，较容易有共同项目或新的联系。'],
+};
+const EXTRA_TITLES={pattern:['发展节奏进入调整期','原有积累开始接上新安排'],family:['家中事务与照料分工有变化','家人往来与共同安排增多'],wellbeing:['忙碌与休息的安排需要重排','生活节奏逐渐稳定'],disputes:['合同、责任与分工容易有争议','把悬而未决的约定谈清楚'],character:['做事节奏和表达方式有变化','自主决定与表达的机会增加'],network:['合作关系和分工需要调整','协作与新联系增多']};
+const EXTRA_YEAR_READINGS={
+  pattern:['这一年的发展节奏有明显转折，工作与生活里的几项安排容易相互牵动，旧的做法需要调整。','这一年更容易把前期积累接到新的任务和生活安排上，事情从酝酿转向落实。'],
+  family:['这一年家人事务占用的时间增加，照料责任、长幼之间的意见和生活安排容易重新分配。','这一年与家人的往来和共同事务增加，家庭中的支持和相互配合更容易体现出来。'],
+  wellbeing:['这一年的忙碌来自多项安排同时挤在一起，工作、家庭与个人时间之间的拉扯比较明显。','这一年的生活节奏趋于稳定，精力分配更有秩序，先前被打乱的日常安排逐渐恢复。'],
+  disputes:['这一年容易在责任归属、交付要求和约定变更上出现争议，事情往往卡在各方理解不一致。','这一年已有分歧更容易进入具体协商，悬而未决的条款、分工和交接开始有明确处理方向。'],
+  character:['这一年自主决定的事情增多，但临时改主意和表达过急也更明显，做事方式会经历一轮调整。','这一年更愿意表达自己的判断，独立处理事情的机会增多，做事方式开始形成更清楚的个人主张。'],
+  network:['这一年合作关系进入重新磨合的阶段，分工、利益和承诺比交情本身更容易成为矛盾点。','这一年人际往来和协作机会增多，新联系、共同项目和同行之间的配合成为比较突出的主题。'],
+};
+
+export function annualEvents(yearData, analysis, input={}, columns=[]) {
+  const context=eventContext(yearData,input),age=yearData.age;
+  const luckPillars=[...new Set(yearData.months.flatMap(m=>(m.segments||[]).map(s=>s.daYun)).filter(validPillar))];
+  const signals=structuralSignals(yearData.ganZhi,columns,analysis,'流年',luckPillars);
+  const changes=yearData.months.filter(m=>(m.segments||[]).length>1);
+  if(changes.length){signals.pattern.support+=5;signals.pattern.evidence.push({ruleId:'E11-luck-transition',text:`本年${changes.map(m=>m.ganZhi).join('、')}月发生大运交接。`});}
+  const allowed=id=>{
+    if(Number.isFinite(age)&&age<18&&['career','wealth','relationship','disputes'].includes(id))return false;
+    if(context.retired&&id==='career')return false;
+    if(context.student&&id==='career')return false;
+    if(context.single&&!context.priorities.relationship&&id==='relationship')return false;
+    return true;
   };
-  const ranked = candidates.map(id => {
-    const values = months.map(m => m.domainScores[id]);
-    return { id, average: domainAverage(id), range: Math.max(...values) - Math.min(...values) };
-  }).sort((a, b) => ((priorities[b.id] ? 30 : 0) + (student && b.id === 'study' ? 12 : 0) + Math.abs(b.average - 50) + b.range) - ((priorities[a.id] ? 30 : 0) + (student && a.id === 'study' ? 12 : 0) + Math.abs(a.average - 50) + a.range)).slice(0, 3);
-  return ranked.map(({ id, average }) => {
-    const high = average >= 50;
-    const selected = [...months].sort((a, b) => high ? b.domainScores[id] - a.domainScores[id] : a.domainScores[id] - b.domainScores[id]).slice(0, 2).sort((a, b) => a.index - b.index);
-    const t = templates[id];
-    const facts = selected.flatMap(m => m.contributions.filter(c => c.domain === id).sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).slice(0, 2).map(c => ({ ruleId: c.ruleId, text: `${m.ganZhi}月：${c.text}` })));
-    const contextNotes = [];
-    if (priorities[id]) contextNotes.push(`你提供的${contextYear}年计划中含相关事项：${plans}`);
-    if (student && id === 'study') contextNotes.push(`你提供的职业阶段为“${occupation}”，因此优先列课程与考核情景`);
-    if (retired) contextNotes.push(`你提供的阶段为“${occupation}”，本年不套用在职升职模板`);
-    if (id === 'relationship' && partnered) contextNotes.push(`你提供的关系状态为“${relationship}”，因此讨论现有关系的分工与共同安排`);
-    if (id === 'relationship' && single) contextNotes.push(`你提供的关系状态为“${relationship}”，只有实际开始交往后才适用伴侣协商情景`);
-    let condition = t.condition;
-    if (id === 'relationship' && partnered) condition = '若你提供的伴侣关系在当年持续，且确有共同安排或分工需要协商';
-    if (id === 'relationship' && single) condition = '你目前单身；若当年实际开始相亲或认真交往，才适用本条关系进展情景';
-    const publicReading = publicEventReading({ id, high, selected, age, year: yearData.year, student, retired, single, partnered, occupation, plans, priorities });
-    return { domain: id, title: t.title, ...publicReading, condition, scenario: (contextNotes.length ? contextNotes.join('；') + '。' : '') + (high ? t.positive : t.negative), window: selected.map(m => ({ monthIndex: m.index, ganZhi: m.ganZhi, startDate: m.startDate || null, endDate: m.endDate || null })), evidence: facts, counterEvidence: '如果没有上述现实前提，此情景不适用；支持主题不保证事件发生。', verification: t.outcome, support: '按明示传统规则排序，非发生概率', backgroundApplied: contextNotes.length > 0, contextYear: contextNotes.length ? contextYear : null, contextScope: contextNotes.length ? { startYear: contextYear, endYear: contextYear, description: '当前背景仅用于明确的参考年，不反推其他年份的经历。' } : null };
+  const birth=input.solarDate?`${input.solarDate} ${input.solarTime||'00:00:00'}`:null;
+  const monthly=yearData.months.filter(month=>!birth||!month.endDate||month.endDate>birth).map(month=>{
+    const monthLuckPillars=[...new Set((month.segments||[]).map(segment=>segment.daYun).filter(validPillar))];
+    const signals=structuralSignals(month.ganZhi,columns,analysis,'流月',monthLuckPillars);
+    if((month.segments||[]).length>1){signals.pattern.support+=5;signals.pattern.evidence.push({ruleId:'E11-luck-transition',text:`${month.ganZhi}月在${month.segments[0].endDate}发生大运交接。`});}
+    return {month,signals};
   });
+  const candidates=Object.values(signals).filter(s=>allowed(s.id)&&s.evidence.length&&s.support>=3.4).map(s=>{
+    const selected=monthly.filter(({signals:ms})=>ms[s.id].support>=3.4&&ms[s.id].evidence.some(e=>['E02-palace-contact','E03-movement','E05-expression-and-rules','E06-peer-activation','E09-luck-year-role','E10-luck-year-contact','E11-luck-transition'].includes(e.ruleId)))
+      .sort((a,b)=>b.signals[s.id].support-a.signals[s.id].support).slice(0,2);
+    return {...s,selected,rank:s.support+(context.priorities[s.id]?2:0)+(context.student&&s.id==='study'?1:0)};
+  }).sort((a,b)=>b.rank-a.rank||a.id.localeCompare(b.id));
+  // No ranked fallback: quiet or inapplicable fields simply do not become events.
+  return candidates.map(s=>{
+    const average=yearData.domainScores?.[s.id]?.score;
+    const high=s.id==='mobility'||(s.friction<s.support*.45&&(!Number.isFinite(average)||average>=50));
+    let publicReading;
+    if(EXTRA_TITLES[s.id])publicReading={publicTitle:EXTRA_TITLES[s.id][high?1:0],reading:EXTRA_YEAR_READINGS[s.id][high?1:0]};
+    else publicReading=publicEventReading({id:s.id,high,selected:[],age,year:yearData.year,...context});
+    const backgroundApplied=context.applies&&(context.priorities[s.id]||context.student&&s.id==='study'||context.retired&&s.id==='home'||s.id==='relationship'&&(context.single||context.partnered));
+    const contextNote=backgroundApplied?`你提供的${input.contextYear}年情况：${context.plans||context.occupation||context.relationship}。`:'';
+    return {domain:s.id,title:publicReading.publicTitle,...publicReading,condition:'当年有对应的生活事项时，结合实际进展观察。',
+      scenario:contextNote+publicReading.reading,window:s.selected.map(({month:m})=>({monthIndex:m.index,ganZhi:m.ganZhi,startDate:m.startDate,endDate:m.endDate})),
+      evidence:s.evidence,support:round(s.support),friction:round(s.friction),counterEvidence:'结构变化只支持主题，不等于事件必然发生。',verification:'对照实际安排、明确变更及处理结果。',
+      backgroundApplied,contextYear:backgroundApplied?input.contextYear:null,contextScope:backgroundApplied?{startYear:input.contextYear,endYear:input.contextYear}:null,
+      monthlySupport:s.selected.map(({month,signals:ms})=>({index:month.index,support:round(ms[s.id].support),high:ms[s.id].friction<ms[s.id].support*.45,evidence:ms[s.id].evidence})),
+    };
+  });
+}
+function focusMonthsFor(yearData){
+  const byMonth=new Map();
+  for(const event of yearData.events)for(const item of event.monthlySupport||[]){
+    const month=yearData.months.find(m=>m.index===item.index);if(!month)continue;
+    const row=byMonth.get(item.index)||{index:month.index,ganZhi:month.ganZhi,startDate:month.startDate,endDate:month.endDate,events:[],support:0};
+    row.events.push({domain:event.domain,publicTitle:event.publicTitle,reading:MONTH_READINGS[event.domain][item.high?1:0],evidence:item.evidence});
+    row.support=Math.max(row.support,item.support);byMonth.set(item.index,row);
+  }
+  return [...byMonth.values()].sort((a,b)=>b.support-a.support).slice(0,4).sort((a,b)=>a.index-b.index).map(({support,...row})=>row);
 }
 
 export function buildTimeline(chart, input = {}) {
-  const common = { version: RULE_VERSION, method: '每月按原局、大运、流年与真实节气月干支计算明示启发式分数；年度开收为首末月，高低为全年月分极值。交运月按实际时间段加权。', scoreMeaning: '传统主题参考指数，不是财富、成就、健康或事件发生概率；迁移分项表示变化活跃度。', domains: TREND_DOMAINS, limitations: ['未以现实事件数据校准，不能视为经过验证的人生预测。', '图表截止年龄仅是展示范围，不是寿命判断。'] };
+  const common = { version: RULE_VERSION, method: '每月按原局、大运、流年与真实节气月干支计算明示启发式分数；年度开收为首末月，高低为全年月分极值。交运月按实际时间段加权。', scoreMeaning: '传统主题参考指数，不是财富、成就、健康或事件发生概率；迁移分项表示变化活跃度。', domains: TREND_DOMAINS, eventDomains: EVENT_DOMAINS, eventRuleVersion: 'annual-change-v2', limitations: ['未以现实事件数据校准，不能视为经过验证的人生预测。', '图表截止年龄仅是展示范围，不是寿命判断。'] };
   if (!chart.luck?.available) return { ...common, available: false, reason: chart.luck?.reason || '缺少已确认的出生年及精确起运资料，不能生成完整人生时间线。', years: [] };
   const birthYear = Number(chart.birthYear ?? input.birthYear);
   if (!Number.isInteger(birthYear)) return { ...common, available: false, reason: '缺少出生公历年份，不能把四柱周期绑定到人生公历时间轴。', years: [] };
@@ -256,7 +343,11 @@ export function buildTimeline(chart, input = {}) {
       return [id, { open: d[0], close: d[11], high: Math.max(...d), low: Math.min(...d), score: round(d.reduce((a, b) => a + b, 0) / 12) }];
     }));
     const row = { year, age: annual.age ?? year - birthYear + 1, ganZhi: annual.ganZhi, daYun: [...new Set(months.flatMap(m => m.segments.map(s => s.daYun)))].join(' → '), months, open: values[0], close: values[11], high: Math.max(...values), low: Math.min(...values), score: round(values.reduce((a, b) => a + b, 0) / 12), domainScores: perDomain, events: [] };
-    row.events = annualEvents(row, analysis, input);
+    row.events = annualEvents(row, analysis, input, columns);
+    row.focusMonths = focusMonthsFor(row);
+    row.changeLevel = row.events.some(e=>e.support>=8) || row.events.length>=4 ? '较明显' : row.events.length ? '局部变化' : '平稳';
+    const labels=row.events.map(e=>EVENT_DOMAINS.find(d=>d.id===e.domain).title);
+    row.summary = labels.length ? `这一年较值得关注的是${labels.join('、')}，变化主要集中在这些方面。` : '这一年没有特别集中的变化主题，以原有生活安排的延续为主。';
     years.push(row);
   }
   return { ...common, available: years.length > 0, reason: years.length ? undefined : '所选范围没有完整的引擎流月数据。', range: { startYear, endYear }, birthYear, ageConvention: '按引擎 age 显示；缺省为公历年差加一，不是精确周岁。', years, incompleteYears, warnings: [...warnings], coverageComplete: incompleteYears.length === 0 };

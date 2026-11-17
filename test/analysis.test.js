@@ -14,7 +14,7 @@ test('analysis produces all twelve grounded dimensions and keeps tentative patte
   const result = analyzeChart(chart, input);
   assert.deepEqual(result.dimensions.map(d => d.id), DIMENSIONS.map(d => d.id));
   for (const d of result.dimensions) {
-    assert.ok(d.summary && d.publicTitle && d.publicAdvice && d.opportunities.length && d.cautions.length);
+    assert.ok(d.summary && d.headline && d.publicTitle && d.publicAdvice && d.opportunities.length && d.cautions.length);
     assert.ok(d.evidence.every(e => e.ruleId && e.text));
   }
   assert.match(result.pattern.status, /候选/);
@@ -66,7 +66,7 @@ test('K candles derive OHLC exactly from real monthly values, reproducibly', () 
       assert.equal(candle.high, Math.max(...values)); assert.equal(candle.low, Math.min(...values));
     }
     for (const event of y.events) {
-      assert.ok(event.condition && event.evidence.length && event.window.length && event.verification);
+      assert.ok(event.condition && event.evidence.length && Array.isArray(event.window) && event.verification);
       assert.ok(event.publicTitle && event.reading);
       assert.doesNotMatch(event.reading, /证据|核验|验证方式|统计概率|启发式|模型|本规则集|支持主题|标记不适用/);
       assert.ok(event.reading.split('。').filter(Boolean).length <= 3);
@@ -112,7 +112,8 @@ test('real background changes scenarios only in its declared year, never scores'
   assert.ok(chosen.events.every(e => !e.backgroundApplied || e.contextScope.startYear === 2026));
   assert.deepEqual(contextual.years.find(y => y.year === 2025), plain.years.find(y => y.year === 2025));
   for (let i = 0; i < plain.years.length; i++) assert.deepEqual(contextual.years[i].months, plain.years[i].months);
-  const retired = buildTimeline(chart, { ...input, contextYear: 2026, context: { occupation: '已经退休', plans: '装修房屋' } }).years.find(y => y.year === 2026);
+  const later = fixture({ startYear: 2032, endYear: 2032 });
+  const retired = buildTimeline(later.chart, { ...later.input, contextYear: 2032, context: { occupation: '已经退休', plans: '装修房屋' } }).years[0];
   assert.ok(!retired.events.some(e => e.domain === 'career'));
   assert.ok(retired.events.some(e => e.domain === 'home' && e.backgroundApplied));
   assert.ok(retired.events.some(e => e.domain === 'home' && /装修/.test(e.publicTitle + e.reading)));
@@ -122,6 +123,14 @@ test('plain-language readings vary with chart structure and keep advice separate
   const first = fixture(), second = fixture({ date: '1990-05-18', time: '09:00' });
   const a = analyzeChart(first.chart, first.input), b = analyzeChart(second.chart, second.input);
   assert.notEqual(a.summary, b.summary);
-  assert.ok(a.dimensions.filter((d, i) => d.summary !== b.dimensions[i].summary).length >= 3);
+  assert.ok(a.dimensions.filter((d, i) => d.summary !== b.dimensions[i].summary).length >= 8);
   assert.ok(a.dimensions.every(d => d.publicAdvice !== d.summary && !d.opportunities.includes(d.publicAdvice)));
+  for (const result of [a, b]) {
+    assert.equal(result.summary.split('。').filter(Boolean).length, 3);
+    for (const d of result.dimensions) {
+      assert.ok(d.headline.length > 5);
+      assert.ok(d.summary.split('。').filter(Boolean).length >= 2);
+      assert.doesNotMatch(d.summary, /建议|应该|适合|要留意|先把|不要|别把/);
+    }
+  }
 });

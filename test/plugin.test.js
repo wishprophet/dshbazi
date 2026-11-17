@@ -149,7 +149,9 @@ test('reading canonical value is compact and detailed years preserve actual scor
   const details = await yearsTool.execute({ reportId: compact.reportId, startYear: 2026, endYear: 2035 });
   assert.equal(details.years.length, 10);
   assert.equal(details.years[0].months.length, 12);
-  assert.equal(details.years[0].months[0].score, full.timeline.years[36].months[0].score);
+  assert.equal(details.years[0].months[0].ganZhi, full.timeline.years[36].months[0].ganZhi);
+  assert.equal(Object.hasOwn(details.years[0].months[0], 'score'), false);
+  assert.equal(store.get(compact.reportId).timeline.years[36].months[0].score, full.timeline.years[36].months[0].score);
   assert.deepEqual(details.years[0].events, full.timeline.years[36].events);
   assert.ok(!JSON.stringify(details).includes('contributions'));
   await assert.rejects(yearsTool.execute({ reportId: compact.reportId, startYear: 2026, endYear: 2036 }), { code: 'INVALID_ARGS' });

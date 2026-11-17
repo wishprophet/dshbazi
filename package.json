@@ -1,6 +1,6 @@
 {
   "name": "dsh-bazi",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "DeepSeek Harness 八字插件：网站排盘、十二方面批语与人生趋势折线，内置 skill",
   "type": "module",
   "main": "./src/plugin.js",
@@ -14,7 +14,7 @@
     "verify:website": "node scripts/verify-website.js",
     "prepack": "node scripts/check-package.js"
   },
-  "engines": { "node": ">=22", "dsh": ">=0.2.2-rc.3 <0.3.0" },
+  "engines": { "node": ">=22", "dsh": ">=0.2.2-rc.1 <0.3.0-0" },
   "dependencies": { "lunar-javascript": "1.7.8" },
   "keywords": ["dsh", "dsh-plugin", "bazi", "八字", "skill", "deepseek-harness"],
   "license": "MIT"

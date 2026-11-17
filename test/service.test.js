@@ -30,6 +30,20 @@ test('lunar entry is converted before website request without losing minutes',as
 test('four pillars alone generate original analysis without inventing a lifetime',async()=>{
   const r=await createReading({calendar:'pillars',gender:'male',pillars:{year:'己卯',month:'丙子',day:'戊午',hour:'戊午'}},{fetchImpl:()=>{throw new Error('must not fetch');}});
   assert.equal(r.analysis.dimensions.length,12);assert.equal(r.timeline.available,false);assert.deepEqual(r.timeline.years,[]);
+  assert.equal(r.lifeTimeline.available,false);
+  assert.equal(r.chenggu.available,false);
+});
+
+test('life overview starts at birth and uses a fixed display range independently of requested detail years',async()=>{
+  const r=await createReading(base,{provider:'local'});
+  assert.deepEqual(r.timeline.years.map(y=>y.year),[2026,2027,2028]);
+  assert.equal(r.lifeTimeline.years[0].year,2000);
+  assert.equal(r.lifeTimeline.years.at(-1).year,2080);
+  assert.equal(r.lifeTimeline.displayRange.basis,'fixed-display-window');
+  assert.ok(r.lifeTimeline.years.every(y=>y.months.length===12));
+  for(const year of r.timeline.years) assert.deepEqual(year,r.lifeTimeline.years.find(y=>y.year===year.year));
+  assert.ok(r.chart.luck.cycles.some(c=>c.years.some(y=>y.year===2080)));
+  assert.equal(r.chenggu.available,true);
 });
 test('caller cancellation and invalid provider do not become fallback results',async()=>{
   const controller=new AbortController();controller.abort(new Error('cancelled by caller'));

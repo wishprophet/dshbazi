@@ -99,7 +99,7 @@ export function normalizeInput(raw) {
   }
   if (input.birthYear) {
     input.startYear ??= input.birthYear;
-    input.endYear ??= Math.min(input.startYear+80, input.birthYear+119);
+    input.endYear ??= Math.max(input.startYear, input.birthYear+80);
     if (input.startYear < input.birthYear || input.endYear < input.startYear || input.endYear > input.birthYear+119 || input.endYear-input.startYear>119) throw new InputError('分析年份须在出生年起120年范围内，且结束年不小于开始年');
   }
   return input;

@@ -24,15 +24,28 @@ try {
   await call('Page.navigate',{url:pathToFileURL(report).href});
   for(let i=0;i<50;i++){if(await evaluate('document.readyState === "complete" && !!document.querySelector("#year option")'))break;await new Promise(r=>setTimeout(r,100));}
   await evaluate('document.documentElement.style.scrollBehavior="auto"');
-  const initial=await evaluate('({title:document.title,years:document.querySelectorAll("#year option").length,months:document.querySelectorAll("#months tr").length,yearPoints:document.querySelectorAll("#trend [data-index]").length,lines:document.querySelectorAll("#trend .trend-line").length,selected:document.querySelector("#year").value})');
-  assert.ok(initial.years>1);assert.equal(initial.months,12);assert.equal(initial.yearPoints,initial.years);assert.ok(initial.lines>0,'continuous yearly trend must be drawn');
-  const vertical=await evaluate(`Array.from(document.querySelectorAll('.gan-zhi-stack')).map(stack=>{const chars=Array.from(stack.querySelectorAll('.gan-zhi-char'));return {count:chars.length,positions:chars.map(c=>{const r=c.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,element:c.dataset.element,color:getComputedStyle(c).color};})};})`);
+  const initial=await evaluate('({title:document.title,years:document.querySelectorAll("#year option").length,months:document.querySelectorAll("#months .focus-month").length,yearPoints:document.querySelectorAll("#trend [data-index]").length,lines:document.querySelectorAll("#trend .trend-line").length,selected:document.querySelector("#year").value})');
+  assert.ok(initial.years>1);assert.ok(initial.months<=4);assert.equal(initial.yearPoints,initial.years);assert.ok(initial.lines>0,'continuous yearly trend must be drawn');
+  const vertical=await evaluate(`Array.from(document.querySelectorAll('.natal-pillars .gan-zhi-stack')).map(stack=>{const chars=Array.from(stack.querySelectorAll('.gan-zhi-char'));return {count:chars.length,positions:chars.map(c=>{const r=c.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,element:c.dataset.element,color:getComputedStyle(c).color};})};})`);
   assert.equal(vertical.length,4);
   for(const pillar of vertical){assert.equal(pillar.count,2);assert.ok(pillar.positions[1].y>pillar.positions[0].y);assert.ok(Math.abs(pillar.positions[1].x-pillar.positions[0].x)<2);assert.ok(pillar.positions.every(p=>['木','火','土','金','水'].includes(p.element)));}
   const publicText=await evaluate('document.body.innerText');
-  for(const text of ['口径与依据','需保留的条件','lunar-javascript','规则版本','真太阳时','不表示健康诊断或寿命','格局名称不等于社会阶层']) assert.equal(publicText.includes(text),false,`internal text exposed: ${text}`);
+  for(const text of ['纳音','城头土','月度分','口径与依据','需保留的条件','lunar-javascript','规则版本','真太阳时','不表示健康诊断或寿命','格局名称不等于社会阶层']) assert.equal(publicText.includes(text),false,`internal text exposed: ${text}`);
+  assert.ok(await evaluate('document.querySelector("#chenggu").textContent.includes("原句") && document.querySelector("#chenggu").textContent.includes("白话")'));
+  assert.ok(await evaluate('document.querySelector("#chenggu").compareDocumentPosition(document.querySelector("#timeline")) & Node.DOCUMENT_POSITION_FOLLOWING'));
   const shot=async name=>{const r=await call('Page.captureScreenshot',{format:'png'});await writeFile(path.join(out,name),Buffer.from(r.data,'base64'));};
   await shot('desktop.png');
+  assert.ok(await evaluate('document.querySelector("#natal-relations").textContent.includes("子午冲")'));
+  const firstContacts=await evaluate('document.querySelector("#active-relations").textContent');
+  await evaluate('document.querySelector("#dimensions").scrollIntoView({behavior:"instant"})');await shot('dimensions.png');
+  await evaluate('document.querySelector("#chenggu").scrollIntoView({behavior:"instant"})');await shot('chenggu.png');
+  await evaluate('window.scrollTo({top:0,behavior:"instant"})');
+  await evaluate('document.querySelector("#chart-year").value="2028";document.querySelector("#chart-year").dispatchEvent(new Event("change"))');
+  assert.equal(await evaluate('document.querySelector("#year").value'),'2028');
+  assert.notEqual(await evaluate('document.querySelector("#active-relations").textContent'),firstContacts);
+  const transition=await evaluate('document.querySelector("#active-pillars").innerText');
+  assert.ok(transition.replace(/\s/g,"").includes('甲戌')&&transition.replace(/\s/g,"").includes('癸酉'));
+  await shot('chart-transition.png');
   const before=await evaluate('document.querySelector("#metrics").textContent');
   await evaluate('document.querySelector("#domain").value="wealth"; document.querySelector("#domain").dispatchEvent(new Event("change"))');
   assert.notEqual(await evaluate('document.querySelector("#metrics").textContent'),before);
@@ -47,6 +60,8 @@ try {
   const firstYear=await evaluate('document.querySelectorAll("#trend [data-index]")[0].dataset.year');
   await evaluate('document.querySelectorAll("#trend [data-index]")[0].dispatchEvent(new MouseEvent("click",{bubbles:true}))');
   assert.equal(await evaluate('document.querySelector("#year").value'),firstYear);
+  assert.equal(await evaluate('document.querySelector("#chart-year").value'),firstYear);
+  assert.ok(await evaluate('document.querySelector("#active-pillars").textContent.includes("起运前")'));
   await evaluate('document.querySelectorAll("#trend [data-index]")[0].dispatchEvent(new KeyboardEvent("keydown",{key:"ArrowRight",bubbles:true}))');
   assert.equal(await evaluate('document.querySelector("#year").value'),await evaluate('document.querySelector("#year option:nth-child(2)").value'));
   assert.deepEqual(errors,[]);

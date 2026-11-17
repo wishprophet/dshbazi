@@ -5,6 +5,11 @@ import { normalizeInput,calculateChart,yearFacts } from '../src/calendar.js';
 const base={name:'测试',gender:'male',location:'北京',calendar:'solar',date:'2000-01-01',time:'12:34',startYear:2026,endYear:2030};
 const chart=(changes={})=>calculateChart(normalizeInput({...base,...changes}));
 
+test('default ending year is a fixed birth-based display horizon, not shifted by detail start year',()=>{
+  assert.equal(normalizeInput({...base,endYear:undefined}).endYear,2080);
+  assert.equal(normalizeInput({...base,startYear:2090,endYear:undefined}).endYear,2090);
+});
+
 test('known calendar fixtures and late Zi follow website convention',()=>{
   const cases=[
     ['2000-01-01','12:34',['己卯','丙子','戊午','戊午']],

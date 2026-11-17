@@ -115,14 +115,15 @@ const currentChinaYear = () => Number(new Intl.DateTimeFormat('en', { timeZone: 
 const pick = (value, keys) => Object.fromEntries(keys.filter(key => value?.[key] !== undefined).map(key => [key, value[key]]));
 
 function yearDetail(row, includeMonths = true) {
-  const result = pick(row, ['year', 'age', 'ganZhi', 'daYun', 'score', 'open', 'close', 'high', 'low', 'domainScores', 'events']);
-  if (includeMonths) result.months = (row.months ?? []).map(month => pick(month, ['index', 'ganZhi', 'jie', 'startDate', 'endDate', 'daYun', 'score', 'domainScores']));
+  const result = pick(row, ['year', 'age', 'ganZhi', 'daYun', 'score', 'domainScores', 'summary', 'changeLevel', 'events', 'focusMonths']);
+  result.events=(row.events??[]).map(({monthlySupport,...event})=>event);
+  if (includeMonths) result.months = (row.months ?? []).map(month => pick(month, ['index', 'ganZhi', 'jie', 'startDate', 'endDate', 'daYun']));
   return result;
 }
 
 /** A bounded projection: no nested cycle-year copies, raw HTML or contributions. */
 export function readingModelView(report) {
-  const chart = report.chart ?? {}, analysis = report.analysis ?? {}, timeline = report.timeline ?? {};
+  const chart = report.chart ?? {}, analysis = report.analysis ?? {}, timeline = report.lifeTimeline ?? report.timeline ?? {};
   const years = timeline.years ?? [];
   const recent = years.filter(row => row.year >= report.previewYear).slice(0, 5);
   const details = (recent.length ? recent : years.slice(-5)).map(row => yearDetail(row, false));
@@ -130,16 +131,17 @@ export function readingModelView(report) {
     schemaVersion: report.schemaVersion,
     reportId: report.reportId,
     input: report.input,
+    ...(report.chenggu ? { chenggu: pick(report.chenggu, ['available', 'title', 'weight', 'verse', 'translation', 'reason']) } : {}),
     chart: {
       ...pick(chart, ['pillars', 'dayMaster', 'columns', 'solarDateTime', 'lunarDate', 'gender', 'birthYear', 'location', 'elementCounts', 'relationships', 'calendarPolicy', 'source', 'validation']),
       luck: { ...pick(chart.luck, ['available', 'reason', 'forward', 'startDate', 'startAge', 'source', 'localStartDate']), cycles: (chart.luck?.cycles ?? []).map(cycle => pick(cycle, ['index', 'ganZhi', 'startDate', 'endDate', 'startAge', 'endAge'])) },
     },
     analysis: {
       ...pick(analysis, ['version', 'summary', 'pattern', 'strength', 'methodology', 'limitations']),
-      dimensions: (analysis.dimensions ?? []).map(dimension => ({ ...pick(dimension, ['id', 'title', 'publicTitle', 'summary', 'publicAdvice', 'opportunities', 'cautions']), evidence: (dimension.evidence ?? []).slice(0, 2) })),
+      dimensions: (analysis.dimensions ?? []).map(dimension => ({ ...pick(dimension, ['id', 'title', 'publicTitle', 'headline', 'summary', 'publicAdvice', 'opportunities', 'cautions']), evidence: (dimension.evidence ?? []).slice(0, 2) })),
     },
     timeline: {
-      ...pick(timeline, ['available', 'reason', 'version', 'method', 'scoreMeaning', 'range', 'ageConvention', 'warnings', 'limitations', 'incompleteYears', 'coverageComplete']),
+      ...pick(timeline, ['available', 'reason', 'version', 'method', 'scoreMeaning', 'range', 'displayRange', 'eventDomains', 'ageConvention', 'warnings', 'limitations', 'incompleteYears', 'coverageComplete']),
       annualSummaries: years.map(row => `${row.year}年｜${row.age ?? '?'}岁｜${row.ganZhi}｜大运${row.daYun}｜参考分${row.score}｜${(row.events ?? []).map(event => event.publicTitle ?? event.title).join('；')}`),
       previewYears: details,
     },
@@ -201,7 +203,7 @@ export function createYearsTool({ store = defaultStore } = {}) {
   };
   return {
     name: 'bazi_years',
-    description: '按报告ID读取指定年份的流年情景、依据和流月简表，每批最多10年。数值取自同一份原始报告，不重新计算、不返回全部计分贡献。',
+    description: '按报告ID读取指定年份的十二领域异动、重点月份及干支资料，每批最多10年。只列有信号的月份，不输出月度评分。',
     parameters,
     output: { schema: { type: 'object', additionalProperties: true }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
     async execute(args, exec = {}) {
@@ -209,15 +211,17 @@ export function createYearsTool({ store = defaultStore } = {}) {
       if (args.endYear < args.startYear || args.endYear - args.startYear >= 10) invalid('bazi_years 每批须为连续1—10年');
       abortIfNeeded(exec.signal);
       const report = store.get(args.reportId);
-      const rows = report.timeline?.years ?? [];
+      const timeline = report.lifeTimeline ?? report.timeline;
+      const rows = timeline?.years ?? [];
       const years = rows.filter(row => row.year >= args.startYear && row.year <= args.endYear).map(row => yearDetail(row));
       const found = new Set(years.map(row => row.year));
       const missingYears = Array.from({ length: args.endYear - args.startYear + 1 }, (_, index) => args.startYear + index).filter(y => !found.has(y));
       return {
         reportId: args.reportId, subject: pick(report.input, ['name', 'date', 'time', 'calendar', 'pillars']),
-        available: report.timeline?.available ?? false, years, missingYears,
-        reason: report.timeline?.reason ?? null,
-        scoreMeaning: report.timeline?.scoreMeaning ?? '传统规则参考指数，不是概率。',
+        available: timeline?.available ?? false, years, missingYears,
+        eventDomains: timeline?.eventDomains ?? [],
+        reason: timeline?.reason ?? null,
+        scoreMeaning: timeline?.scoreMeaning ?? '传统规则参考指数，不是概率。',
         warnings: report.warnings ?? [],
       };
     },
