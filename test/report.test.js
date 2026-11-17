@@ -14,16 +14,17 @@ function checkPublicKeys(value){
 const life=report=>report.lifeTimeline??report.timeline;
 const event=()=>({domain:'family',publicTitle:'家人的安排有调整',reading:'和家人重新分配照料时间。',evidence:[{text:'PRIVATE_EVIDENCE_MARKER'}]});
 
-test('report presents vertical pillars, distinct earth/metal colors and valid offline scripts without nayin',async()=>{
+test('report aligns natal pillars in table rows with distinct element colors and valid offline scripts',async()=>{
   const report=await createReading(input,{provider:'local'});
   const html=renderHtml(report),markdown=renderMarkdown(report);
   assert.match(html,/^<!doctype html>/);assert.match(html,/<h1>八字分析<\/h1>/);assert.match(markdown,/^# 八字分析\n/);
-  for(const id of ['domain','year','months','trend','metrics','next','previous','chart-year','chart-cycle','active-pillars','chenggu'])assert.ok(html.includes(`id="${id}"`));
+  for(const id of ['domain','year','months','trend','metrics','next','previous','chart-year','chart-cycle','chart-day','month-chips','active-pillars','chenggu'])assert.ok(html.includes(`id="${id}"`));
   assert.match(html,/Content-Security-Policy/);assert.doesNotMatch(html,/<script[^>]+src=|<link[^>]+href=/);
   const glyphs=[...html.matchAll(/class="gan-zhi-char" data-element="([^"]+)" style="color:([^"]+)">([^<]+)<\/span>/g)];
-  assert.equal(glyphs.length,8);assert.deepEqual(glyphs.map(m=>m[3]),Object.values(report.chart.pillars).join('').split(''));
+  assert.equal(glyphs.length,8);assert.deepEqual(glyphs.map(m=>m[3]),[...Object.values(report.chart.pillars).map(p=>p[0]),...Object.values(report.chart.pillars).map(p=>p[1])]);
   const colors=getPayload(html).colors;assert.equal(colors.土,'#85422a');assert.equal(colors.金,'#bb8c00');
-  assert.match(html,/\.gan-zhi-stack\{[^}]*flex-direction:column/);
+  assert.match(html,/<table class="natal-table"/);assert.match(html,/<tr class="stem-row">/);assert.match(html,/<tr class="branch-row">/);
+  for(const label of ['十神','天干','地支','藏干','空亡','神煞'])assert.ok(html.includes(`<th scope="row">${label}</th>`));
   for(const content of [html,markdown])assert.doesNotMatch(content,/纳音|城头土|涧下水|天上火|月度分|每月评分/);
   assert.match(markdown,/\| 天干 \|/);assert.match(markdown,/\| 地支 \|/);assert.match(markdown,/大运与流年对照/);
   for(const match of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g))if(!match[1].includes('application/json'))assert.doesNotThrow(()=>new vm.Script(match[2]));
@@ -47,7 +48,7 @@ test('public payload uses full life timeline, exact annual values and only meani
   renderMarkdown(report);assert.equal(JSON.stringify(report),original,'rendering preserves complete internal data');
 });
 
-test('explorer preserves actual annual pillars, ten gods and both cycles in transition years',async()=>{
+test('explorer preserves real month boundaries and only the cycles active in each period',async()=>{
   const report=await createReading(input,{provider:'local'}),data=getPayload(renderHtml(report));
   const y=data.explorer.years.find(row=>row.year===2028);
   assert.equal(y.ganZhi,life(report).years.find(row=>row.year===2028).ganZhi);
@@ -57,17 +58,28 @@ test('explorer preserves actual annual pillars, ten gods and both cycles in tran
   assert.equal(cycles[0].endDate,cycles[1].startDate);
   assert.equal(cycles[0].stemGod,'七杀');assert.equal(cycles[1].stemGod,'正财');
   assert.ok(cycles.every(c=>c.hiddenStems.length>0));
+  const actual=life(report).years.find(row=>row.year===2028);
+  assert.deepEqual(y.months.map(m=>[m.ganZhi,m.startDate,m.endDate]),actual.months.map(m=>[m.ganZhi,m.startDate,m.endDate]));
+  const after=y.months.find(m=>m.startDate>cycles[1].startDate);
+  assert.deepEqual(after.cycleIds,[cycles[1].id]);
+  const transition=y.months.find(m=>m.startDate<cycles[1].startDate&&m.endDate>cycles[1].startDate);
+  assert.deepEqual(transition.cycleIds,cycles.map(c=>c.id));
+  for(const month of y.months){assert.ok(!Object.hasOwn(month,'score'));assert.ok(!Object.hasOwn(month,'domainScores'));}
+  assert.equal(Object.keys(data.explorer.facts).length,60);
   const birth=data.explorer.years.find(row=>row.year===2000);
   assert.equal(data.explorer.cycles.find(c=>c.id===birth.cycleIds[0]).ganZhi,'');
 });
 
-test('chenggu includes original verse and translation before the life trend without internal metadata',async()=>{
+test('chenggu is three compact lines under the natal chart with direct interpretation and no separate section',async()=>{
   const report=await createReading(input,{provider:'local'});
-  report.chenggu={available:true,title:'袁天罡称骨',weight:{qian:42,totalText:'四两二钱'},verse:['原诗第一句','原诗第二句','原诗第三句','原诗第四句'],translation:'这是独立的白话释义。',provenance:{source:'PRIVATE_SOURCE_MARKER'}};
+  report.chenggu={available:true,title:'袁天罡称骨',weight:{qian:42,totalText:'四两二钱'},verse:['原诗第一句','原诗第二句','原诗第三句','原诗第四句'],translation:'早年多靠自己，家业逐渐积累。',provenance:{source:'PRIVATE_SOURCE_MARKER'}};
   const html=renderHtml(report),markdown=renderMarkdown(report);
-  for(const content of [html,markdown]){assert.ok(content.includes('四两二钱'));assert.ok(content.includes('原诗第四句'));assert.ok(content.includes('这是独立的白话释义。'));assert.doesNotMatch(content,/PRIVATE_SOURCE_MARKER/);}
-  assert.ok(html.indexOf('<section id="chenggu"')<html.indexOf('<section id="timeline"'));
-  assert.ok(markdown.indexOf('## 袁天罡称骨')<markdown.indexOf('## 人生走势'));
+  for(const content of [html,markdown]){assert.ok(content.includes('四两二钱'));assert.ok(content.includes('原诗第四句'));assert.ok(content.includes('早年多靠自己，家业逐渐积累。'));assert.doesNotMatch(content,/PRIVATE_SOURCE_MARKER/);}
+  const chart=html.slice(html.indexOf('<section id="chart"'),html.indexOf('<section id="reading"'));
+  assert.match(chart,/<div id="chenggu"/);assert.ok(chart.indexOf('称骨解读')>chart.indexOf('称骨评语'));
+  assert.doesNotMatch(html,/<section id="chenggu"|href="#chenggu"|<h[1-6][^>]*>[^<]*称骨/);
+  assert.doesNotMatch(markdown,/^#{1,6} .*称骨/m);
+  assert.ok(markdown.indexOf('称骨解读')<markdown.indexOf('## 整体分析'));
 });
 
 test('public report excludes technical reasoning and escapes user-controlled fields including explorer and chenggu',async()=>{

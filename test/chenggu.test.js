@@ -12,7 +12,7 @@ test('common four-table fixture totals exactly and returns four original lines',
   assert.equal(r.weight.totalText, '四两四钱');
   assert.deepEqual(r.weight.parts.map(p => p.qian), [17, 6, 5, 16]);
   assert.deepEqual(r.verse, ['万事由天莫苦求', '须知福禄胜前途', '当年财帛难如意', '晚景欣然便不忧']);
-  assert.ok(r.translation.includes('诗中'));
+  assert.equal(r.translation, '前期收入未必如愿，付出与回报常有时间差，越着急越感到吃力。后来积累渐厚，生活条件比先前改善，晚些时候更能过得安稳舒展。');
   const solarExample = calculateChenggu(birth({ calendar: 'solar', date: '2000-01-01', time: '12:34' }));
   assert.equal(solarExample.lunar.dateText, '一九九九年冬月廿五');
   assert.deepEqual(solarExample.weight.parts.map(p => p.qian), [19, 9, 15, 10]);
@@ -71,6 +71,7 @@ test('all reachable weights have a verse, including the exact minimum and maximu
     assert.equal(CHENGGU_VERSES[qian].verse.length, 4);
     assert.ok(CHENGGU_VERSES[qian].verse.every(line => [...line].length === 7), `invalid verse at ${qian}`);
     assert.ok(CHENGGU_VERSES[qian].translation.length > 20);
+    assert.doesNotMatch(CHENGGU_VERSES[qian].translation, /这首|诗中|诗里|诗意|原诗|歌诀|前两句|后两句|描绘|描写|象征|意象|赞语/, `indirect commentary at ${qian}`);
   }
   assert.equal(CHENGGU_VERSES[72], undefined);
   assert.equal(weightText(30), '三两'); assert.equal(weightText(6), '六钱');

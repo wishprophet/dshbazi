@@ -12,4 +12,5 @@ test('selected-period relationships include only contacts with the selected luck
   assert.ok(rows.length);
   assert.ok(rows.every(r=>r.keys.includes('luck')||r.keys.includes('annual')));
   assert.ok(rows.some(r=>r.type==='六合'));
+  assert.ok(rows.some(r=>r.type==='天干冲'&&r.text.includes('甲庚冲')));
 });
