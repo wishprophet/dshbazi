@@ -2,13 +2,13 @@
 
 给 DeepSeek Harness 使用的四柱八字插件，内置 `bazi` skill。输入出生信息或已知四柱，生成命盘、十二个人生领域的总体批语、逐年分析和人生走势图。
 
-0.1.4 按周易大学式表格组织命盘，保留现有配色与样式。本命四柱按行对齐，运年表可联动大运、流年、流月和流日；称骨重量、评语及直接解读并入本命盘底部。后面保留生活化总评、十二领域批语和人生走势。年度批语按信号筛选变化的领域，流月只列重点月份，不逐月打分。排盘来源、版本、规则编号与计算明细留在原始 JSON 中。
+0.1.5 的总评结合月令格局、透干根气、制化和夫妻宫，直接说明事业顺逆、财务积累与婚缘早晚；成家年龄只取原局和真实大运流年共同支持的成年窗口，不固定套用某个年龄。命盘沿用周易大学式表格布局和当前配色，支持运年月日联动；称骨重量、评语和直接解读并入本命盘底部。年度批语覆盖十二方面，流月只列重点月份，不逐月打分。来源和计算明细保留在原始 JSON 中。
 
 ## 功能与来源
 
 - **网站优先**：`auto` 尝试 [周易大学堂排盘](https://zydx.top/) 的免登录、不保存命例路径；请求失败时降级本地，在原始 JSON 中记录实际来源与原因。插件不登录账号、不操作保存命例；这不意味着第三方服务器没有请求日志。
 - **本地排盘**：`local` 使用锁定版本的 [`lunar-javascript`](https://github.com/6tail/lunar-javascript)，无须把出生信息发往排盘网站。`website` 用于明确要求网站来源的场景，不能将失败伪装成网站成功。
-- **十二领域**：整体发展、事业工作、收入积累、家庭亲情、感情婚姻、学习成长、身心状态、出行变化、居住家业、纠纷与麻烦、性格处事、朋友合作；对应的传统维度仍在内部保留。
+- **十二领域**：整体发展、事业工作、收入积累、父母家人、感情婚姻、学习考试、身心状态、外出变动、住房家产、合同纠纷、性格做事、人际合作；对应的传统维度仍在内部保留。
 - **逐年分析**：每年选取最突出的事情，落到岗位、回款、课程、相处、住房和出行等生活表现。用户提供的职业、婚恋和计划只用于对应年份。
 - **命盘对照**：四柱、大运、流年干支按五行着色，可切换年份与大运对照；交运年保留前后两步运。公开报告不显示纳音。
 - **称骨批语**：按通行农历年月日时权重表计算，显示歌诀原句与原创白话。仅有四柱时不猜出生日期和骨重。
@@ -120,13 +120,13 @@ dsh plugin --profile desktop add "F:/Program/dsh/bazi"
 
 ### GitHub 安装
 
-当前源码尚未提供已发布 GitHub 地址，不要把下面占位符直接当作现成仓库。将本包作为仓库根目录发布后，用实际仓库和固定提交替换：
+源码仓库：[wishprophet/dshbazi](https://github.com/wishprophet/dshbazi)。仓库名为 `dshbazi`，插件包名为 `dsh-bazi`，本地目录可继续叫 `bazi`。安装 0.1.5：
 
 ```powershell
-dsh plugin --profile web add "github:OWNER/REPO#FULL_COMMIT_SHA"
+dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.5"
 ```
 
-Desktop 同样使用应用内插件管理或其自带 CLI。固定提交便于复现；只使用经过核验、与当前 DSH 版本匹配的发布物。
+也可把 `v0.1.5` 换为完整提交 SHA，以固定实际代码。若仓库为私有，运行 DSH 的机器也需要仓库读取权限；仅在开发机添加 SSH 公钥不会自动给其他服务器授权。无法直接读取时，将安装包复制到 DSH 服务器后从本地安装。Desktop 同样使用应用内插件管理或其自带 CLI。
 
 安装后向 DSH 发送：
 
@@ -151,4 +151,4 @@ bazi_report({reportId, format: "html"})
 
 人生走势图使用年度连续折线，与报告中的年度分数一致。原始 JSON 仍保留完整盘面、来源、证据、内部提醒、OHLC 和月度数据；如果专门追问依据，可以继续从这些资料中展开。
 
-开发说明见 [docs/integration.md](docs/integration.md)，已执行的检查及边界见 [docs/validation.md](docs/validation.md)。GitHub 发布步骤见 [docs/publishing.md](docs/publishing.md)。
+接手项目先看 [交接文档](docs/HANDOFF.md)。开发说明见 [docs/integration.md](docs/integration.md)，已执行的检查及边界见 [docs/validation.md](docs/validation.md)。发布步骤见 [docs/publishing.md](docs/publishing.md)，版本变化见 [CHANGELOG.md](CHANGELOG.md)。

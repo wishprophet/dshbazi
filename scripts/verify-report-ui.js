@@ -1,6 +1,6 @@
 // Optional Windows visual/integration check. Requires installed Edge; no npm browser dependency.
 import {spawn} from 'node:child_process';
-import {mkdir,mkdtemp,writeFile} from 'node:fs/promises';
+import {mkdir,mkdtemp,readFile,writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -38,6 +38,9 @@ try {
   assert.equal(publicText.includes('这首诗写'),false);
   const shot=async name=>{const r=await call('Page.captureScreenshot',{format:'png'});await writeFile(path.join(out,name),Buffer.from(r.data,'base64'));};
   await shot('desktop.png');
+  const source=JSON.parse(await readFile(path.join(path.dirname(report),'report.json'),'utf8'));
+  assert.equal(await evaluate('document.querySelector(".summary").textContent'),source.analysis.summary);
+  await evaluate('document.querySelector(".summary").scrollIntoView({behavior:"instant"})');await shot('overview.png');
   assert.ok(await evaluate('document.querySelector("#natal-relations").textContent.includes("子午冲")'));
   const firstContacts=await evaluate('document.querySelector("#active-relations").textContent');
   await evaluate('document.querySelector("#dimensions").scrollIntoView({behavior:"instant"})');await shot('dimensions.png');

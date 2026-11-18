@@ -3,6 +3,7 @@ import { fetchZydx } from './providers/zydx.js';
 import { analyzeChart } from './analysis.js';
 import { buildTimeline } from './timeline.js';
 import { calculateChenggu } from './chenggu.js';
+import { addSpecificConclusions } from './conclusions.js';
 
 export { normalizeInput, calculateChart } from './calendar.js';
 export async function createReading(raw, options = {}) {
@@ -31,10 +32,10 @@ export async function createReading(raw, options = {}) {
   } else if(input.calendar!=='pillars') warnings.push('本次采用本地历法库；起运日期可能与网站口径不同。');
   if(!chart.luck.available) warnings.push(chart.luck.reason);
   if(input.calendar==='pillars' && input.birthYear && !input.solarDate) warnings.push('四柱导入仅有出生公历年，年龄按虚岁年度展示，不推定生日；起运前区间起点仅用于年份定位。');
-  const analysis=analyzeChart(chart,input);
+  const analysis=addSpecificConclusions(chart,analyzeChart(chart,input),input);
   const timeline=buildTimeline(chart,input);
   const lifeTimeline=lifeInput.startYear===input.startYear&&lifeInput.endYear===input.endYear?timeline:buildTimeline(chart,lifeInput);
   lifeTimeline.displayRange={startYear:lifeInput.startYear,endYear:lifeInput.endYear,basis:'fixed-display-window'};
   const chenggu=calculateChenggu(input);
-  return {schemaVersion:'1.1.0',input,chart,analysis,timeline,lifeTimeline,chenggu,warnings,provenance:{plugin:'dsh-bazi',version:'0.1.4',calendarLibrary:'lunar-javascript@1.7.8',requestedProvider:provider,actualProvider:chart.source,website:website?{url:website.url,fetchedAt:website.fetchedAt,save:false,cycles:website.cycles??[],rawText:website.rawText}:null,interpretation:'传统规则启发式，不是统计预测概率；姓名不参与评分。'}};
+  return {schemaVersion:'1.1.0',input,chart,analysis,timeline,lifeTimeline,chenggu,warnings,provenance:{plugin:'dsh-bazi',version:'0.1.5',calendarLibrary:'lunar-javascript@1.7.8',requestedProvider:provider,actualProvider:chart.source,website:website?{url:website.url,fetchedAt:website.fetchedAt,save:false,cycles:website.cycles??[],rawText:website.rawText}:null,interpretation:'传统规则启发式，不是统计预测概率；姓名不参与评分。'}};
 }

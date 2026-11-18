@@ -138,6 +138,7 @@ export function readingModelView(report) {
     },
     analysis: {
       ...pick(analysis, ['version', 'summary', 'pattern', 'strength', 'methodology', 'limitations']),
+      ...(analysis.overview?{overview:analysis.overview}:{}),
       dimensions: (analysis.dimensions ?? []).map(dimension => ({ ...pick(dimension, ['id', 'title', 'publicTitle', 'headline', 'summary', 'publicAdvice', 'opportunities', 'cautions']), evidence: (dimension.evidence ?? []).slice(0, 2) })),
     },
     timeline: {

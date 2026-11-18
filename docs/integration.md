@@ -41,9 +41,13 @@ Host 插件导出 `name`、`inject`、`apply(ctx)`，使用 `inject: ['tools', '
 
 Skill 负责内部核对计算事实，再生成生活化的公开批语。现实背景严格限定在 `contextYear` 本年；未指定时由输入规范化使用北京时间当年。相邻年份、幼年和远期年份都不直接套用现有职业、关系与计划。模型不能重算干支、补造起运或改写趋势分数。
 
-### 0.1.4 的公开展示
+### 0.1.5 的公开展示
 
 HTML、Markdown 与模型最终回答以普通读者为对象：开头给直接总评，十二维度使用生活化标题，流年写成具体短句。维度优先采用 `publicTitle`、`summary`、`publicAdvice`、`opportunities`；事件优先采用 `publicTitle`、`reading`。这些字段负责表达，内部 ID 和证据结构继续保留。
+
+`conclusions.js` 在基础分析之后生成 `analysis.overview`，含 `pattern/career/marriage/wealth/summary`。总评与事业、婚姻、财富对应维度共用结论；原来的 `analysis.pattern/strength/groups/relations` 不被改写，走势图仍由原始分析规则驱动。模型摘要包含 overview，HTML/Markdown 只取其公开成文结果，内部证据不显示为报告附录。
+
+婚缘顺逆与早晚分别计算。`marriage-conclusions.js` 从实际大运与流年交集找成年窗口，不跨交运拼接互斥条件，不把藏星或单一日支冲直接当作晚婚。窗口的门槛和20—45虚岁观察范围属于本项目的解释规则，不是古籍原文或经过统计校准的模型。已知已婚状态时不再预测首次成婚，缺起运资料或没有合格窗口时不补造年龄。
 
 常规正文不输出算法来源、版本、规则编号、技术口径、“格局候选”术语、`cautions`/`limitations` 等内部提示，也不机械附上适用条件、反证清单或免责声明。只有缺信息或实质冲突影响结果时，用一句话说明需要补充的资料。用户专门追问依据时，再展开对应数据。
 

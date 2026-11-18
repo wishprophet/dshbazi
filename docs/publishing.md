@@ -1,48 +1,72 @@
-# 发布到 GitHub 和安装
+# 发布与安装
 
-本目录本身就是独立 Git 仓库与 npm 插件包根目录，不要把外层 `dsh` 目录作为插件根目录发布。
+源码仓库为 [wishprophet/dshbazi](https://github.com/wishprophet/dshbazi)。本目录是独立 Git 仓库和 npm 插件包根目录。GitHub 仓库名 `dshbazi`、插件包名 `dsh-bazi`、本地目录名 `bazi` 无须相同；不要上传外层 `dsh` 目录。
 
-## 发布前
+## 发布检查
+
+需要 Node.js 22 或更高版本。一次版本更新按以下顺序操作：
+
+1. 更新 `package.json`、`package-lock.json` 和 `src/service.js` 中的插件版本。
+2. 更新 `CHANGELOG.md`、相关文档与验证记录；若改了公开字段，同步 skill。
+3. 执行离线测试、生成示例并验证页面。涉及网站接口时另行验证匿名排盘。
+4. 打包并在隔离目录安装，确认打包后仍有三个工具和 skill 资源。
+5. 检查待提交文件，提交、打标签、推送；标签不要覆盖已发布版本。
 
 ```powershell
-cd F:\Program\dsh\bazi
 npm ci
 npm test
 npm run demo
+node scripts/verify-report-ui.js
 npm pack
 ```
 
-`npm test` 完全离线。需要检查网站当前可用性时单独执行 `npm run verify:website`；它只提交代码中三个虚构示例，并固定不保存命例。
+页面检查脚本默认使用 Windows Edge，访问新建浏览器配置中的本地示例报告。其他系统可以手动打开报告检查四柱、运年切换、手机布局和人生折线。
 
-`reports/`、`node_modules/`、`.env` 与打包产生的 `.tgz` 已被 Git 忽略，不会把个人命盘或依赖文件提交到 GitHub。发布前仍应检查 `git status`。
+`npm test` 不联网。网站检查单独运行 `npm run verify:website`，它提交三个固定虚构案例，使用 `save=0`，不需要登录。
 
-## 首次上传
-
-在 GitHub 创建空仓库，例如 `bazi`，然后使用自己的 Git 身份完成首次提交。若未配置身份，先在本仓库设置 `git config user.name "你的显示名"` 与 `git config user.email "你的提交邮箱"`。
+`reports/`、`node_modules/`、`.env`、`.vscode/` 和 `.tgz` 已忽略。不要提交个人命盘、凭据、SSH 私钥或本机编辑器设置。检查实际暂存内容后再提交：
 
 ```powershell
-git add .
-git commit -m "Initial release of dsh-bazi"
-git remote add origin https://github.com/YOUR_ACCOUNT/bazi.git
+git status --short
+git diff --check
+git diff --cached --stat
+git commit -m "Release v0.1.5"
+git tag v0.1.5
 git push -u origin main
+git push origin v0.1.5
 ```
 
-`YOUR_ACCOUNT` 是占位符，需要替换。当前交付没有创建远程仓库、推送或公开任何出生资料。发布版本时建议同时更新 `package.json`、锁文件和版本说明，并打版本标签。
+以上提交命令只处理已经暂存的修改。后续发版把版本号改为新版本，不重复创建已有标签。远程地址应为 `git@github.com:wishprophet/dshbazi.git`；SSH 凭据单独配置在开发环境，不写进仓库。
 
-## 从本地或 GitHub 安装到 dsh
+`npm pack` 产生 `dsh-bazi-0.1.5.tgz`。源码 ZIP 可在仓库目录生成：
 
-Web 版使用对应版本 CLI：
+```powershell
+git archive --format=zip --prefix=bazi/ --output=../bazi.zip v0.1.5
+```
+
+推送 Git 标签不等于创建 GitHub Releases 页面，也不等于发布到 npm。需要网页下载附件时，在 GitHub 为对应标签创建 Release，再上传 `.tgz`；源码 ZIP 也可通过 GitHub 标签页面下载。
+
+## 安装或更新 DSH
+
+先运行 `dsh --version`。插件声明范围为 `>=0.2.2-rc.1 <0.3.0-0`，当前原生隔离验证版本为 `0.2.2-rc.1`，详细结果见 [validation.md](validation.md)。
+
+Web profile 使用对应版本的 CLI：
+
+```powershell
+dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.5"
+```
+
+也可以安装本地目录或将生成的安装包复制到服务器后安装：
 
 ```powershell
 dsh plugin --profile web add "F:/Program/dsh/bazi"
+dsh plugin --profile web add "F:/Program/dsh/bazi/dsh-bazi-0.1.5.tgz"
 ```
 
-发布之后：
+路径是安装命令所在机器上的路径，部署到其他服务器需替换。私有 GitHub 仓库要求 DSH 所在机器具备读取权限；开发机的 SSH 授权不会自动传到服务器。可改用已复制到服务器的本地安装包。
 
-```powershell
-dsh plugin --profile web add "github:YOUR_ACCOUNT/bazi#FULL_COMMIT_SHA"
-```
+Desktop 使用应用内 Plugin Manager 或桌面自带 CLI 的 `--profile desktop`；普通 npm CLI 不能管理 Desktop profile。已安装旧版时在插件管理中替换为新版本；若提示 `restart-required`，重启对应实例。
 
-Desktop 使用应用内 Plugin Manager 安装目录或 GitHub 地址，或使用桌面自带 CLI 的 `--profile desktop`；普通 npm CLI 不能管理 Desktop profile。详细说明见仓库 README。
+安装后确认 `bazi_reading`、`bazi_years`、`bazi_report` 与 `bazi` skill 可发现，调用本地示例，然后再试网站模式。完整报告文件由 CLI 生成；`bazi_report` 返回文本，不承诺 DSH 自动预览 HTML。
 
-安装后模型应能发现 `bazi` skill 和八字工具。首次用本地示例验证，再使用网站模式。尚未在用户实际 DSH 环境启动验证时，不能把工具模拟注册测试写成真机安装成功。
+本地打包、GitHub 推送和用户线上实例更新是三件独立的事。只有在目标实例中查到新版并完成一次调用，才能记录该实例已升级；不能用隔离 registry 测试代替线上验收。
