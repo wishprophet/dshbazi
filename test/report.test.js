@@ -18,6 +18,7 @@ test('report aligns natal pillars in table rows with distinct element colors and
   const report=await createReading(input,{provider:'local'});
   const html=renderHtml(report),markdown=renderMarkdown(report);
   assert.match(html,/^<!doctype html>/);assert.match(html,/<h1>八字分析<\/h1>/);assert.match(markdown,/^# 八字分析\n/);
+  for(const content of [html,markdown]){assert.match(content,/十二方面分析/);assert.doesNotMatch(content,/生活各方面|这盘的发展主线是/);}
   for(const id of ['domain','year','months','trend','metrics','next','previous','chart-year','chart-cycle','chart-day','month-chips','active-pillars','chenggu'])assert.ok(html.includes(`id="${id}"`));
   assert.match(html,/Content-Security-Policy/);assert.doesNotMatch(html,/<script[^>]+src=|<link[^>]+href=/);
   const glyphs=[...html.matchAll(/class="gan-zhi-char" data-element="([^"]+)" style="color:([^"]+)">([^<]+)<\/span>/g)];

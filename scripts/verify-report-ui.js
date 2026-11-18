@@ -43,6 +43,16 @@ try {
   await evaluate('document.querySelector("#dimensions").scrollIntoView({behavior:"instant"})');await shot('dimensions.png');
   await evaluate('document.querySelector("#chenggu").scrollIntoView({behavior:"instant"})');await shot('chenggu.png');
   await evaluate('window.scrollTo({top:0,behavior:"instant"})');
+  const cycleClicks=await evaluate(`(()=>{
+    const facts=JSON.parse(document.querySelector('#report-data').textContent).explorer.cycles;
+    return ['3','4','3','3','2','3'].map((id,index)=>{
+      if(index%2){const select=document.querySelector('#chart-cycle');select.value=id;select.dispatchEvent(new Event('change'));}
+      else document.querySelector('#cycle-buttons [data-cycle="'+id+'"]').click();
+      const current=facts.find(c=>c.id===id);
+      return {id,selected:document.querySelector('#chart-cycle').value,button:document.querySelector('#cycle-buttons .active')?.dataset.cycle,heading:document.querySelector('#active-relations .relation-period-title')?.textContent,expected:(current.ganZhi||'起运前')+(current.ganZhi?'运期间':''),explanation:document.querySelector('#cycle-explanation').textContent,pillar:current.ganZhi};
+    });
+  })()`);
+  for(const state of cycleClicks){assert.equal(state.selected,state.id);assert.equal(state.button,state.id);assert.equal(state.heading,state.expected,'cycle details must match immediately after each click');assert.ok(state.explanation.startsWith(state.pillar));}
   await evaluate('document.querySelector("#chart-year").value="2028";document.querySelector("#chart-year").dispatchEvent(new Event("change"))');
   assert.equal(await evaluate('document.querySelector("#year").value'),'2028');
   assert.notEqual(await evaluate('document.querySelector("#active-relations").textContent'),firstContacts);

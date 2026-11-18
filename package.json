@@ -1,6 +1,6 @@
 {
   "name": "dsh-bazi",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "DeepSeek Harness 八字插件：网站排盘、十二方面批语与人生趋势折线，内置 skill",
   "type": "module",
   "main": "./src/plugin.js",
