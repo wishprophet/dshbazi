@@ -1,8 +1,70 @@
-# dsh-bazi
+# dsh-bazi · 八字分析
+
+<img src="assets/icon-180.png" width="88" height="88" alt="八字分析插件图标">
 
 给 DeepSeek Harness 使用的四柱八字插件，内置 `bazi` skill。输入出生信息或已知四柱，生成命盘、十二个人生领域的总体批语、逐年分析和人生走势图。
 
-0.1.5 的总评结合月令格局、透干根气、制化和夫妻宫，直接说明事业顺逆、财务积累与婚缘早晚；成家年龄只取原局和真实大运流年共同支持的成年窗口，不固定套用某个年龄。命盘沿用周易大学式表格布局和当前配色，支持运年月日联动；称骨重量、评语和直接解读并入本命盘底部。年度批语覆盖十二方面，流月只列重点月份，不逐月打分。来源和计算明细保留在原始 JSON 中。
+总评结合月令格局、透干根气、制化和夫妻宫，直接说明事业顺逆、财务积累与婚缘早晚；成家年龄只取原局和真实大运流年共同支持的成年窗口，不固定套用某个年龄。命盘沿用周易大学式表格布局和当前配色，支持运年月日联动；称骨重量、评语和直接解读并入本命盘底部。年度批语覆盖十二方面，流月只列重点月份，不逐月打分。来源和计算明细保留在原始 JSON 中。
+
+BaZi charting and traditional interpretation for DeepSeek Harness. Accepts solar/lunar birth dates or known Four Pillars, calculates locally or via Zydx, and provides twelve-domain readings, linked luck-cycle/year/month/day views, annual trend charts, standalone HTML reports and a bundled skill.
+
+## 快速安装
+
+需要 Node.js 22+；面向 DSH `>=0.2.2-rc.1 <0.3.0-0`，已用官方 rc.1 组件验证。Web profile 安装：
+
+```powershell
+dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.6"
+```
+
+也可从 [v0.1.6 发布页](https://github.com/wishprophet/dshbazi/releases/tag/v0.1.6) 下载 `dsh-bazi-0.1.6.tgz`，将本地路径交给 DSH 插件管理器安装。Desktop 使用应用内插件管理或桌面自带 CLI，详见下方安装说明。
+
+安装后可以直接说：
+
+> 使用 bazi skill，男，出生地北京，公历 2000 年 1 月 1 日 12:34。先本地排盘，再分析整体情况和十二方面，细批 2026—2030 年，并给出人生走势。
+
+插件提供 `bazi_reading`、`bazi_years`、`bazi_report` 三个工具和内置 `bazi` skill。交互报告由 CLI 输出，或由 `bazi_report` 返回 HTML 文本；截图展示的是可独立打开的报告。
+
+## 实际报告截图
+
+以下截图均由 `examples/solar.json` 中的虚构示例生成。市场截图清单为根目录的 [`screenshots.json`](screenshots.json)，[截图说明](docs/screenshots/README.md) 包含复现方法。
+
+**四柱命盘**：天干、地支上下对齐，展示五行颜色、十神、藏干、关系和内联称骨批语。
+
+![四柱命盘与内联称骨批语](docs/screenshots/01-natal-chart.png)
+
+<details>
+<summary>运年月日与本命对照</summary>
+
+选择大运、流年、节气月或具体日期，查看对应干支及其与本命的关系。
+
+![大运流年流月流日联动对照](docs/screenshots/02-luck-explorer.png)
+
+</details>
+
+<details>
+<summary>整体分析与十二方面批语</summary>
+
+先给事业、财富、婚缘等具体判断，再展开十二方面的批语和建议。
+
+![整体分析与十二方面批语](docs/screenshots/03-overview-dimensions.png)
+
+</details>
+
+<details>
+<summary>人生走势、年度事件与重点月份</summary>
+
+连续折线显示年度变化；选择年份后同步显示当年分析，只列值得关注的月份。
+
+![人生折线与年度重点事件](docs/screenshots/04-life-trend.png)
+
+</details>
+
+<details>
+<summary>手机阅读</summary>
+
+<img src="docs/screenshots/05-mobile.png" width="390" alt="手机上的四柱命盘报告">
+
+</details>
 
 ## 功能与来源
 
@@ -120,13 +182,13 @@ dsh plugin --profile desktop add "F:/Program/dsh/bazi"
 
 ### GitHub 安装
 
-源码仓库：[wishprophet/dshbazi](https://github.com/wishprophet/dshbazi)。仓库名为 `dshbazi`，插件包名为 `dsh-bazi`，本地目录可继续叫 `bazi`。安装 0.1.5：
+源码仓库：[wishprophet/dshbazi](https://github.com/wishprophet/dshbazi)。仓库名为 `dshbazi`，插件包名为 `dsh-bazi`，本地目录可继续叫 `bazi`。安装 0.1.6：
 
 ```powershell
-dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.5"
+dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.6"
 ```
 
-也可把 `v0.1.5` 换为完整提交 SHA，以固定实际代码。若仓库为私有，运行 DSH 的机器也需要仓库读取权限；仅在开发机添加 SSH 公钥不会自动给其他服务器授权。无法直接读取时，将安装包复制到 DSH 服务器后从本地安装。Desktop 同样使用应用内插件管理或其自带 CLI。
+也可把 `v0.1.6` 换为完整提交 SHA，以固定实际代码。若仓库为私有，运行 DSH 的机器也需要仓库读取权限；仅在开发机添加 SSH 公钥不会自动给其他服务器授权。无法直接读取时，将安装包复制到 DSH 服务器后从本地安装。Desktop 同样使用应用内插件管理或其自带 CLI。
 
 安装后向 DSH 发送：
 
@@ -151,4 +213,4 @@ bazi_report({reportId, format: "html"})
 
 人生走势图使用年度连续折线，与报告中的年度分数一致。原始 JSON 仍保留完整盘面、来源、证据、内部提醒、OHLC 和月度数据；如果专门追问依据，可以继续从这些资料中展开。
 
-接手项目先看 [交接文档](docs/HANDOFF.md)。开发说明见 [docs/integration.md](docs/integration.md)，已执行的检查及边界见 [docs/validation.md](docs/validation.md)。发布步骤见 [docs/publishing.md](docs/publishing.md)，版本变化见 [CHANGELOG.md](CHANGELOG.md)。
+接手项目先看 [交接文档](docs/HANDOFF.md)。开发说明见 [docs/integration.md](docs/integration.md)，已执行的检查及边界见 [docs/validation.md](docs/validation.md)。发布步骤见 [docs/publishing.md](docs/publishing.md)，市场资料维护见 [docs/MARKETPLACE.md](docs/MARKETPLACE.md)，版本变化见 [CHANGELOG.md](CHANGELOG.md)。

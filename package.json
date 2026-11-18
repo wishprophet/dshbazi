@@ -1,12 +1,12 @@
 {
   "name": "dsh-bazi",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "DeepSeek Harness 八字插件：网站排盘、十二方面批语与人生趋势折线，内置 skill",
   "type": "module",
   "main": "./src/plugin.js",
   "exports": { ".": "./src/plugin.js", "./core": "./src/service.js", "./report": "./src/report.js", "./package.json": "./package.json" },
   "bin": { "dsh-bazi": "./src/cli.js" },
-  "files": ["src", "skills", "examples", "scripts", "README.md", "CHANGELOG.md", "LICENSE", "NOTICE", "docs", "cordis.patch.yml"],
+  "files": ["src", "skills", "examples", "scripts", "assets", "screenshots.json", "README.md", "CHANGELOG.md", "LICENSE", "NOTICE", "docs", "cordis.patch.yml"],
   "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
   "scripts": {
     "test": "node --test test/*.test.js",

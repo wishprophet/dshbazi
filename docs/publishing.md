@@ -30,21 +30,27 @@ npm pack
 git status --short
 git diff --check
 git diff --cached --stat
-git commit -m "Release v0.1.5"
-git tag v0.1.5
+git commit -m "Release v0.1.6"
+git tag v0.1.6
 git push -u origin main
-git push origin v0.1.5
+git push origin v0.1.6
 ```
 
 以上提交命令只处理已经暂存的修改。后续发版把版本号改为新版本，不重复创建已有标签。远程地址应为 `git@github.com:wishprophet/dshbazi.git`；SSH 凭据单独配置在开发环境，不写进仓库。
 
-`npm pack` 产生 `dsh-bazi-0.1.5.tgz`。源码 ZIP 可在仓库目录生成：
+`npm pack` 产生 `dsh-bazi-0.1.6.tgz`。源码 ZIP 可在仓库目录生成：
 
 ```powershell
-git archive --format=zip --prefix=bazi/ --output=../bazi.zip v0.1.5
+git archive --format=zip --prefix=bazi/ --output=../bazi.zip v0.1.6
 ```
 
-推送 Git 标签不等于创建 GitHub Releases 页面，也不等于发布到 npm。需要网页下载附件时，在 GitHub 为对应标签创建 Release，再上传 `.tgz`；源码 ZIP 也可通过 GitHub 标签页面下载。
+推送 Git 标签不等于创建 GitHub Releases 页面，也不等于发布到 npm。需要网页下载附件时，在 GitHub 为对应标签创建 Release，再上传 `.tgz`；源码 ZIP 也可通过 GitHub 标签页面下载。使用已登录的 GitHub CLI 发布附件时，先把发布说明写入文件：
+
+```powershell
+gh release create v0.1.6 ./dsh-bazi-0.1.6.tgz --repo wishprophet/dshbazi --verify-tag --title "v0.1.6" --notes-file reports/release-notes.md
+```
+
+发布后验证匿名下载与附件校验值。市场条目使用固定标签的 `.tgz` 地址，版本更新后同步投稿条目；图标和截图维护见 [MARKETPLACE.md](MARKETPLACE.md)。
 
 ## 安装或更新 DSH
 
@@ -53,14 +59,14 @@ git archive --format=zip --prefix=bazi/ --output=../bazi.zip v0.1.5
 Web profile 使用对应版本的 CLI：
 
 ```powershell
-dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.5"
+dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.6"
 ```
 
 也可以安装本地目录或将生成的安装包复制到服务器后安装：
 
 ```powershell
 dsh plugin --profile web add "F:/Program/dsh/bazi"
-dsh plugin --profile web add "F:/Program/dsh/bazi/dsh-bazi-0.1.5.tgz"
+dsh plugin --profile web add "F:/Program/dsh/bazi/dsh-bazi-0.1.6.tgz"
 ```
 
 路径是安装命令所在机器上的路径，部署到其他服务器需替换。私有 GitHub 仓库要求 DSH 所在机器具备读取权限；开发机的 SSH 授权不会自动传到服务器。可改用已复制到服务器的本地安装包。
