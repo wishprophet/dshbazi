@@ -10,6 +10,7 @@
 - 发行包离线安装后，通过官方 DSH rc.1 组件的工具与 skill 注册、真实调用、输出 schema 和卸载检查。
 - 市场使用 `fun` 分类和单条 YAML；仓库年龄门槛、发布附件与后续维护方式记录在 [MARKETPLACE.md](MARKETPLACE.md)。收录状态以实际市场 PR 为准。
 - 使用市场上游原始 `entries.mjs` 和截图解析函数进行本地校验，条目问题列表为空，五张截图的路径、PNG 格式及图标尺寸通过；这不替代市场远程 CI 与人工审核。
+- 发布后匿名访问截图清单、图标和五张截图均返回 200，文件校验值与本地一致；匿名下载 Release 安装包的 SHA-256 与已上传校验文件一致。市场收录申请为 [PR #16681](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/16681)，仅新增自家 YAML。
 
 ## 0.1.5 具体总评与开发交接
 

@@ -2,6 +2,8 @@
 
 投稿目标为 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)，遵循其 [contributing.md](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md)。市场维护者合并投稿后才会更新目录；GitHub 仓库发布成功不代表已经收录。
 
+首次收录申请：[PR #16681](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/16681)。投稿分支为 `wishprophet/awesome-dsh-plugin:add-dshbazi`，仅新增本插件 YAML。公开发行包和校验文件见 [v0.1.6 Release](https://github.com/wishprophet/dshbazi/releases/tag/v0.1.6)，申请当前状态以 PR 页面为准。
+
 ## 本项目的市场资料
 
 - 源码仓库：`wishprophet/dshbazi`，公开可读，主题包含 `dsh-plugin`。

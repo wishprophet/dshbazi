@@ -213,4 +213,4 @@ bazi_report({reportId, format: "html"})
 
 人生走势图使用年度连续折线，与报告中的年度分数一致。原始 JSON 仍保留完整盘面、来源、证据、内部提醒、OHLC 和月度数据；如果专门追问依据，可以继续从这些资料中展开。
 
-接手项目先看 [交接文档](docs/HANDOFF.md)。开发说明见 [docs/integration.md](docs/integration.md)，已执行的检查及边界见 [docs/validation.md](docs/validation.md)。发布步骤见 [docs/publishing.md](docs/publishing.md)，市场资料维护见 [docs/MARKETPLACE.md](docs/MARKETPLACE.md)，版本变化见 [CHANGELOG.md](CHANGELOG.md)。
+接手项目先看 [交接文档](docs/HANDOFF.md)。开发说明见 [docs/integration.md](docs/integration.md)，已执行的检查及边界见 [docs/validation.md](docs/validation.md)。发布步骤见 [docs/publishing.md](docs/publishing.md)，市场资料维护见 [docs/MARKETPLACE.md](docs/MARKETPLACE.md)，[收录申请](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/16681) 可查看审核进度，版本变化见 [CHANGELOG.md](CHANGELOG.md)。
