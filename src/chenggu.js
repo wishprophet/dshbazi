@@ -1,5 +1,6 @@
 import lunar from 'lunar-javascript';
 import { CHENGGU_TABLES, CHENGGU_VERSES } from './data/chenggu.js';
+import { FEMALE_CHENGGU_VERSES } from './data/chenggu-female.js';
 
 export { CHENGGU_TABLES, CHENGGU_VERSES } from './data/chenggu.js';
 const { Solar, LunarUtil } = lunar;
@@ -13,13 +14,20 @@ export function weightText(qian) {
 }
 
 export const CHENGGU_POLICY = Object.freeze({
-  id: 'chenggu-common-lunar-v1',
+  id: 'chenggu-gendered-lunar-v2',
   yearBoundary: '农历正月初一',
   lunarDay: '民用农历日期；23点属于子时，但不改称骨所用的农历日期',
   leapMonth: '闰月整月使用同名月份的月重',
-  verseVersion: '通行四句本，男女共用，21至71钱',
+  verseVersion: '男女分歌，21至71钱',
   role: '独立查表与诗文释义，不参与子平评分，不用于寿命或曲线截止年份',
 });
+
+// Full JSON reports can be re-rendered after an upgrade. Only migrate the known shared-song edition.
+export function chengguForDisplay(result, gender) {
+  if (!result?.available || gender !== 'female' || result.provenance?.policy?.id !== 'chenggu-common-lunar-v1') return result;
+  const song = FEMALE_CHENGGU_VERSES[result.weight?.qian];
+  return song ? { ...result, verse: [...song.verse], translation: song.translation } : result;
+}
 
 /** Requires normalized birth input. Four pillars do not identify a unique lunar birthday. */
 export function calculateChenggu(input = {}) {
@@ -42,7 +50,8 @@ export function calculateChenggu(input = {}) {
   };
   if (!Object.values(weights).every(Number.isInteger)) throw new RangeError('出生信息不能匹配称骨表');
   const qian = Object.values(weights).reduce((sum, value) => sum + value, 0);
-  const song = CHENGGU_VERSES[qian];
+  if (!['male', 'female'].includes(input.gender)) throw new TypeError('请提供性别以选择称骨评语');
+  const song = (input.gender === 'female' ? FEMALE_CHENGGU_VERSES : CHENGGU_VERSES)[qian];
   if (!song) throw new RangeError('称骨总重没有对应歌诀');
   const weightParts = [
     { key: 'year', label: '年', value: yearGanZhi, qian: weights.year },
@@ -58,7 +67,10 @@ export function calculateChenggu(input = {}) {
     provenance: {
       policy: CHENGGU_POLICY, attribution: '民间流传称骨歌，通常托名袁天罡；不作作者考证结论。',
       tableSources: ['https://guanyitang.com/chenggu', 'https://ezfate.com/zh/bazi-weight/chart'],
-      verseSources: ['https://commons.wikimedia.org/wiki/File:NTUL-9900007270_大雜字不求人.pdf', 'https://ezfate.com/zh/bazi-weight/chart'],
+      verseGender: input.gender,
+      verseSources: input.gender === 'female'
+        ? ['https://m.guoxuemeng.com/guoxue/623350.html']
+        : ['https://commons.wikimedia.org/wiki/File:NTUL-9900007270_大雜字不求人.pdf', 'https://ezfate.com/zh/bazi-weight/chart'],
       documentation: 'docs/chenggu-sources.md', translation: '本项目原创白话释义',
     },
   };

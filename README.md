@@ -13,10 +13,10 @@ BaZi charting and traditional interpretation for DeepSeek Harness. Accepts solar
 需要 Node.js 22+；面向 DSH `>=0.2.2-rc.1 <0.3.0-0`，已用官方 rc.1 组件验证。Web profile 安装：
 
 ```powershell
-dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.6"
+dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.7"
 ```
 
-也可从 [v0.1.6 发布页](https://github.com/wishprophet/dshbazi/releases/tag/v0.1.6) 下载 `dsh-bazi-0.1.6.tgz`，将本地路径交给 DSH 插件管理器安装。Desktop 使用应用内插件管理或桌面自带 CLI，详见下方安装说明。
+也可从 [v0.1.7 发布页](https://github.com/wishprophet/dshbazi/releases/tag/v0.1.7) 下载 `dsh-bazi-0.1.7.tgz`，将本地路径交给 DSH 插件管理器安装。Desktop 使用应用内插件管理或桌面自带 CLI，详见下方安装说明。
 
 安装后可以直接说：
 
@@ -73,8 +73,8 @@ dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.6"
 - **十二领域**：整体发展、事业工作、收入积累、父母家人、感情婚姻、学习考试、身心状态、外出变动、住房家产、合同纠纷、性格做事、人际合作；对应的传统维度仍在内部保留。
 - **逐年分析**：每年选取最突出的事情，落到岗位、回款、课程、相处、住房和出行等生活表现。用户提供的职业、婚恋和计划只用于对应年份。
 - **命盘对照**：四柱、大运、流年干支按五行着色，可切换年份与大运对照；交运年保留前后两步运。公开报告不显示纳音。
-- **称骨批语**：按通行农历年月日时权重表计算，显示歌诀原句与原创白话。仅有四柱时不猜出生日期和骨重。
-- **人生走势**：从出生年起展示八十年的连续折线，指定更远结束年时延展；同时保留请求的细批区间。图表结束年份是固定展示范围。内部 OHLC、流月数据与计算明细完整保留。
+- **称骨批语**：按农历年月日时计算骨重，男命、女命分别查对应的歌诀原句与白话。仅有四柱时不猜出生日期和骨重。
+- **人生走势**：从出生年起展示八十年的连续折线，指定更远结束年时延展；同时保留请求的细批区间。默认沙箱预览可以直接看到整条折线，并展开逐年批语。支持脚本的浏览器还可切换年份和分项。内部 OHLC、流月数据与计算明细完整保留。
 - **报告文件**：Markdown 和可独立打开的 HTML 用于阅读，JSON 用于取数、复核和继续分析。
 
 ## 本地试用
@@ -182,13 +182,13 @@ dsh plugin --profile desktop add "F:/Program/dsh/bazi"
 
 ### GitHub 安装
 
-源码仓库：[wishprophet/dshbazi](https://github.com/wishprophet/dshbazi)。仓库名为 `dshbazi`，插件包名为 `dsh-bazi`，本地目录可继续叫 `bazi`。安装 0.1.6：
+源码仓库：[wishprophet/dshbazi](https://github.com/wishprophet/dshbazi)。仓库名为 `dshbazi`，插件包名为 `dsh-bazi`，本地目录可继续叫 `bazi`。安装 0.1.7：
 
 ```powershell
-dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.6"
+dsh plugin --profile web add "github:wishprophet/dshbazi#v0.1.7"
 ```
 
-也可把 `v0.1.6` 换为完整提交 SHA，以固定实际代码。若仓库为私有，运行 DSH 的机器也需要仓库读取权限；仅在开发机添加 SSH 公钥不会自动给其他服务器授权。无法直接读取时，将安装包复制到 DSH 服务器后从本地安装。Desktop 同样使用应用内插件管理或其自带 CLI。
+也可把 `v0.1.7` 换为完整提交 SHA，以固定实际代码。若仓库为私有，运行 DSH 的机器也需要仓库读取权限；仅在开发机添加 SSH 公钥不会自动给其他服务器授权。无法直接读取时，将安装包复制到 DSH 服务器后从本地安装。Desktop 同样使用应用内插件管理或其自带 CLI。
 
 安装后向 DSH 发送：
 

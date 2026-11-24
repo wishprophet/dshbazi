@@ -18,7 +18,7 @@ try {
   await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j;});
   let serial=0;const pending=new Map(),errors=[];
   ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.method==='Runtime.exceptionThrown') errors.push(m.params.exceptionDetails.text);if(m.id){const p=pending.get(m.id);if(p){pending.delete(m.id);clearTimeout(p.t);m.error?p.reject(new Error(JSON.stringify(m.error))):p.resolve(m.result);}}};
-  const call=(method,params={})=>new Promise((resolve,reject)=>{const id=++serial;const t=setTimeout(()=>{pending.delete(id);reject(new Error(`CDP timeout ${method}`));},10000);pending.set(id,{resolve,reject,t});ws.send(JSON.stringify({id,method,params}));});
+  const call=(method,params={},sessionId)=>new Promise((resolve,reject)=>{const id=++serial;const t=setTimeout(()=>{pending.delete(id);reject(new Error(`CDP timeout ${method}`));},10000);pending.set(id,{resolve,reject,t});ws.send(JSON.stringify({id,method,params,sessionId}));});
   const evaluate=async expression=>{const result=await call('Runtime.evaluate',{expression,returnByValue:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.exception?.description||result.exceptionDetails.text);return result.result.value;};
   await call('Runtime.enable');await call('Page.enable');
   await call('Emulation.setDeviceMetricsOverride',{width:1440,height:1100,deviceScaleFactor:1,mobile:false});
@@ -98,5 +98,28 @@ try {
   await evaluate('document.querySelectorAll("#trend [data-index]")[0].dispatchEvent(new KeyboardEvent("keydown",{key:"ArrowRight",bubbles:true}))');
   assert.equal(await evaluate('document.querySelector("#year").value'),await evaluate('document.querySelector("#year option:nth-child(2)").value'));
   assert.deepEqual(errors,[]);
-  console.log(JSON.stringify({pass:true,...initial,pillars:'table-aligned and element-colored',interaction:'cycle, year, month, day and trend switching passed',consoleErrors:errors,screenshots:out}));
+  // Load exactly the generated document in an opaque iframe with no script permissions.
+  await call('Page.navigate',{url:'about:blank'});
+  const html = await readFile(report,'utf8');
+  const loaded = await call('Runtime.evaluate',{expression:`new Promise(resolve=>{
+    const frame=document.createElement('iframe');
+    frame.setAttribute('sandbox','');
+    frame.onload=()=>resolve(true);
+    frame.srcdoc=${JSON.stringify(html)};
+    document.body.append(frame);
+  })`, awaitPromise:true,returnByValue:true});
+  assert.equal(loaded.result.value,true);
+  const targets=await call('Target.getTargets');
+  const iframe=targets.targetInfos.find(info=>info.type==='iframe' && info.url==='about:srcdoc');
+  const attachment=iframe && await call('Target.attachToTarget',{targetId:iframe.targetId,flatten:true});
+  const snapshot=await call('DOMSnapshot.captureSnapshot',{computedStyles:[]},attachment?.sessionId);
+  const sandboxDoc=snapshot.documents.find(doc=>snapshot.strings[doc.documentURL]==='about:srcdoc');
+  assert.ok(sandboxDoc,'sandbox document loaded');
+  const attrs=index=>Object.fromEntries((sandboxDoc.nodes.attributes[index]||[]).reduce((pairs,id,i,ids)=>
+    i%2?pairs:[...pairs,[snapshot.strings[id],snapshot.strings[ids[i+1]]]],[]));
+  const drawn=sandboxDoc.layout.nodeIndex.map(attrs);
+  assert.ok(drawn.some(node=>node.class==='trend-line' && node.d.includes('L')));
+  assert.equal(drawn.filter(node=>node.class==='trend-point').length,initial.yearPoints);
+  assert.ok(!drawn.some(node=>node.class==='report-interactive' || node.id==='domain'),'no script or inactive controls in sandbox');
+  console.log(JSON.stringify({pass:true,...initial,pillars:'table-aligned and element-colored',sandboxYearPoints:drawn.filter(node=>node.class==='trend-point').length,interaction:'cycle, year, month, day and trend switching passed',consoleErrors:errors,screenshots:out}));
 } finally {ws?.close();edge.kill();}

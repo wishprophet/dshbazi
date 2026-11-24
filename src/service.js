@@ -37,5 +37,5 @@ export async function createReading(raw, options = {}) {
   const lifeTimeline=lifeInput.startYear===input.startYear&&lifeInput.endYear===input.endYear?timeline:buildTimeline(chart,lifeInput);
   lifeTimeline.displayRange={startYear:lifeInput.startYear,endYear:lifeInput.endYear,basis:'fixed-display-window'};
   const chenggu=calculateChenggu(input);
-  return {schemaVersion:'1.1.0',input,chart,analysis,timeline,lifeTimeline,chenggu,warnings,provenance:{plugin:'dsh-bazi',version:'0.1.6',calendarLibrary:'lunar-javascript@1.7.8',requestedProvider:provider,actualProvider:chart.source,website:website?{url:website.url,fetchedAt:website.fetchedAt,save:false,cycles:website.cycles??[],rawText:website.rawText}:null,interpretation:'传统规则启发式，不是统计预测概率；姓名不参与评分。'}};
+  return {schemaVersion:'1.1.0',input,chart,analysis,timeline,lifeTimeline,chenggu,warnings,provenance:{plugin:'dsh-bazi',version:'0.1.7',calendarLibrary:'lunar-javascript@1.7.8',requestedProvider:provider,actualProvider:chart.source,website:website?{url:website.url,fetchedAt:website.fetchedAt,save:false,cycles:website.cycles??[],rawText:website.rawText}:null,interpretation:'传统规则启发式，不是统计预测概率；姓名不参与评分。'}};
 }

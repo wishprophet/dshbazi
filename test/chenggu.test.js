@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeInput, calculateChart } from '../src/calendar.js';
 import { calculateChenggu, CHENGGU_TABLES, CHENGGU_VERSES, weightText } from '../src/chenggu.js';
+import { FEMALE_CHENGGU_VERSES } from '../src/data/chenggu-female.js';
+import { readFileSync } from 'node:fs';
 
 const birth = values => normalizeInput({ gender: 'male', calendar: 'lunar', time: '00:00', ...values });
 
@@ -69,6 +71,11 @@ test('all reachable weights have a verse, including the exact minimum and maximu
   for (const qian of sums) {
     assert.ok(CHENGGU_VERSES[qian]);
     assert.equal(CHENGGU_VERSES[qian].verse.length, 4);
+    const female = FEMALE_CHENGGU_VERSES[qian];
+    assert.equal(female.verse.length, 4);
+    assert.ok(female.verse.every(line => line.length === 7), 'female verse ' + qian);
+    assert.notDeepEqual(female.verse, CHENGGU_VERSES[qian].verse);
+    assert.ok(female.translation.length > 20);
     assert.ok(CHENGGU_VERSES[qian].verse.every(line => [...line].length === 7), `invalid verse at ${qian}`);
     assert.ok(CHENGGU_VERSES[qian].translation.length > 20);
     assert.doesNotMatch(CHENGGU_VERSES[qian].translation, /这首|诗中|诗里|诗意|原诗|歌诀|前两句|后两句|描绘|描写|象征|意象|赞语/, `indirect commentary at ${qian}`);
@@ -77,16 +84,28 @@ test('all reachable weights have a verse, including the exact minimum and maximu
   assert.equal(weightText(30), '三两'); assert.equal(weightText(6), '六钱');
 });
 
-test('four pillars do not fabricate a birthday; name and sex do not change the common version', () => {
+test('sex selects the verse and its reading but preserves the four weights', () => {
   const pillars = birth({ calendar: 'pillars', pillars: '己卯 丙子 戊午 戊午' });
   assert.equal(calculateChenggu(pillars).available, false);
   assert.equal(calculateChenggu(pillars).weight, undefined);
   const a = birth({ date: '1999-11-25', time: '12:34', name: '甲' });
   const b = birth({ date: '1999-11-25', time: '12:34', name: '乙', gender: 'female' });
   const before = JSON.stringify(a);
-  assert.deepEqual(calculateChenggu(a), calculateChenggu(b));
+  const male = calculateChenggu(a), female = calculateChenggu(b);
+  assert.deepEqual(male.weight, female.weight);
+  assert.equal(female.verse[0], '此命相貌眉目清');
+  assert.notDeepEqual(male.verse, female.verse);
+  assert.notEqual(male.translation, female.translation);
   const result = calculateChenggu(a); result.verse[0] = '不能改写源表';
   assert.equal(JSON.stringify(a), before);
   assert.notEqual(calculateChenggu(a).verse[0], '不能改写源表');
   assert.equal(Object.hasOwn(result, 'endYear'), false);
+});
+
+test('female lunar leap-month reading matches the archived Zydx example', () => {
+  const input = birth({ date: '2023-02-01', leapMonth: true, time: '12:00', gender: 'female' });
+  const result = calculateChenggu(input);
+  const fixture = readFileSync(new URL('./fixtures/zydx-lunar-leap-20230201.html', import.meta.url), 'utf8');
+  assert.equal(result.weight.qian, 34);
+  assert.ok(fixture.includes(result.verse.join('，') + '。'));
 });

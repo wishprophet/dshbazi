@@ -1,3 +1,5 @@
+import { trendMarkup } from './trend-svg.js';
+import { chengguForDisplay } from './chenggu.js';
 import { chartColumns } from './analysis.js';
 import { pillarRelationships } from './relationships.js';
 import { buildExplorer, natalTable, explorerShell, CHART_CSS, EXPLORER_JS } from './chart-layout.js';
@@ -37,8 +39,11 @@ export function renderHtml(report){
   const {chart,input,analysis,timeline,name,gender,columns,missingTimelineMessage}=viewModel(report);
   const visible=publicTimeline(timeline),context=contextText(input.context);
   const focusYear=input.targetYear??input.contextYear??input.currentYear??report.meta?.currentYear??Number(new Intl.DateTimeFormat('en',{timeZone:'Asia/Shanghai',year:'numeric'}).format(new Date()));
+  const initialYearIndex = visible.years.reduce((best, row, i) =>
+    Math.abs(row.year - focusYear) < Math.abs(visible.years[best].year - focusYear) ? i : best, 0);
+  const initialYear = visible.years[initialYearIndex];
   const explorer=publicExplorer(chart,timeline);
-  const payload=jsonSafe({timeline:visible,explorer,colors:ELEMENTS,stemElements:STEM_ELEMENTS,branchElements:BRANCH_ELEMENTS,focusYear});
+  const payload=jsonSafe({timeline:visible,explorer,initialYearIndex,colors:ELEMENTS,stemElements:STEM_ELEMENTS,branchElements:BRANCH_ELEMENTS,focusYear});
   return `<!doctype html>
 <html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'"><title>八字分析</title>
 <style>
@@ -48,13 +53,16 @@ export function renderHtml(report){
 .relations{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.relations h3{font-size:13px;margin:0 0 8px}.relation-list{display:flex;flex-wrap:wrap;gap:6px}.relation-chip{font-size:12px;background:#edf1f3;padding:4px 9px;border-radius:5px}.relation-group+.relation-group{margin-top:10px}.relation-group h4{font-size:12px;color:var(--muted);margin:0 0 6px}.chart-board{display:grid;grid-template-columns:2fr 1fr;gap:18px}.natal-pillars{gap:8px}.active-pillars{display:flex;gap:8px;min-width:0}.active-pillars .pillar{flex:1;min-width:0;background:#f2f7f5}.active-pillars .gan-zhi-char{font-size:38px}.active-pillars .small{font-size:10px;line-height:1.6}.board-heading{font-size:12px;color:var(--muted);margin:0 0 8px}.explorer{margin-top:20px;padding:20px}.explorer-toolbar{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:16px}.cycle-buttons{display:flex;gap:7px;overflow:auto;padding:3px 2px 10px}.cycle-button{border:1px solid var(--line);background:#fff;border-radius:7px;min-width:86px;padding:9px 10px;color:var(--text)}.cycle-button.active{border-color:var(--accent);background:var(--soft)}.cycle-button .mini-stack{display:flex;flex-direction:column;font-size:23px;line-height:1.25;font-weight:600}.cycle-button small{display:block;font-size:10px;margin-top:7px;white-space:nowrap}.year-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:7px;margin-top:12px}.year-chip{border:1px solid var(--line);background:#fff;border-radius:6px;padding:9px 5px;color:var(--text)}.year-chip.active{border-color:var(--accent);background:var(--soft)}.year-chip .mini-stack{display:flex;flex-direction:column;font-size:19px;line-height:1.25;font-weight:600;margin:5px 0}.year-chip small{font-size:10px}.selection-explanation{font-size:12px;color:var(--muted);margin:12px 0 0}.focus-months{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}.focus-months h4{font-size:16px;margin:0 0 12px}.month-card{border-left:2px solid #9bbfb2;padding:0 0 0 14px;margin:14px 0}.month-card h5{font-size:14px;margin:0 0 6px}.month-card p{font-size:13px;margin:5px 0}.year-summary{font-size:15px;margin:0 0 18px;line-height:1.9}.timeline-range{font-size:12px;color:var(--muted)}
 @media(max-width:900px){.chart-board{grid-template-columns:1fr}.active-pillars .pillar{padding:12px}.active-pillars .gan-zhi-stack{flex-direction:row;margin:8px 0}.active-pillars .gan-zhi-char{font-size:32px}.active-pillars .hidden{min-height:0}.chenggu-columns{grid-template-columns:1fr;gap:20px}}@media(max-width:560px){.explorer{padding:14px}.explorer-toolbar{gap:10px}.year-chips{grid-template-columns:repeat(5,minmax(0,1fr))}.cycle-button{min-width:76px}.active-pillars .gan-zhi-stack{flex-direction:column}.active-pillars .gan-zhi-char{font-size:30px}.active-pillars .small{font-size:9px}}@media print{.explorer-toolbar,.cycle-buttons,.year-chips{display:none}.chart-board{grid-template-columns:2fr 1fr}.active-pillars .gan-zhi-stack{flex-direction:column}.chenggu-columns{grid-template-columns:1fr 1.5fr}}
 ${CHART_CSS}
+html:not(.report-interactive) :is(.chart-toolbar,.year-controls,.trend-note,.explorer,#metrics,#events,#focus-months){display:none}
+.report-interactive .static-years{display:none}
+.static-years summary{cursor:pointer}.static-years li{margin:6px 0}
 </style></head><body>
 <header><div class="wrap"><h1>八字分析</h1><div class="identity">${esc(name)} · ${esc(gender)}</div><div class="meta"><span>${esc(chart.solarDateTime||'四柱已填写')}</span>${chart.location?`<span>${esc(chart.location)}</span>`:''}</div></div></header>
 <main class="wrap"><nav class="page-nav" aria-label="报告章节"><a href="#chart">四柱命盘</a><a href="#reading">整体分析</a><a href="#dimensions">十二方面分析</a><a href="#timeline">人生走势</a></nav>
-<section id="chart"><div class="section-title"><span class="section-number">01</span><h2>四柱命盘</h2></div>${natalTable(explorer,report.chenggu,{esc,glyph})}<div class="element-legend" aria-label="五行颜色">${Object.entries(ELEMENTS).map(([e,color])=>`<span><i style="background:${color}"></i>${e}</span>`).join('')}</div><div class="facts"><div class="fact"><strong>出生日期</strong><span>${esc(chart.solarDateTime||'未填写')}${chart.lunarDate?`<br>农历 ${esc(chart.lunarDate)}`:''}</span></div><div class="fact"><strong>首次交运</strong><span>${chart.luck?.available?`${esc(chart.luck.startDate)} · ${chart.luck.forward?'顺行':'逆行'}`:'未填写'}</span></div></div>${explorer.years.length?explorerShell:''}</section>
+<section id="chart"><div class="section-title"><span class="section-number">01</span><h2>四柱命盘</h2></div>${natalTable(explorer,chengguForDisplay(report.chenggu, chart.gender ?? input.gender),{esc,glyph})}<div class="element-legend" aria-label="五行颜色">${Object.entries(ELEMENTS).map(([e,color])=>`<span><i style="background:${color}"></i>${e}</span>`).join('')}</div><div class="facts"><div class="fact"><strong>出生日期</strong><span>${esc(chart.solarDateTime||'未填写')}${chart.lunarDate?`<br>农历 ${esc(chart.lunarDate)}`:''}</span></div><div class="fact"><strong>首次交运</strong><span>${chart.luck?.available?`${esc(chart.luck.startDate)} · ${chart.luck.forward?'顺行':'逆行'}`:'未填写'}</span></div></div>${explorer.years.length?explorerShell:''}</section>
 <section id="reading"><div class="section-title"><span class="section-number">02</span><h2>整体分析</h2></div><div class="paper"><p class="summary">${esc(analysis.summary)}</p>${context?`<div class="context">${esc(context)}</div>`:''}</div></section>
 <section id="dimensions"><div class="section-title"><span class="section-number">03</span><h2>十二方面分析</h2></div><div class="dimension-grid">${(analysis.dimensions||[]).map((d,i)=>`<article class="paper dimension"><h3><span class="dimension-id">${String(i+1).padStart(2,'0')}</span>${esc(titleOf(d))}</h3>${d.headline?`<p class="verdict">${esc(d.headline)}</p>`:''}<p>${esc(d.summary)}</p>${d.opportunities?.length?`<ul class="opportunities">${d.opportunities.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${d.publicAdvice?`<p class="advice">${esc(d.publicAdvice)}</p>`:''}</article>`).join('')}</div></section>
-<section id="timeline"><div class="section-title"><span class="section-number">04</span><h2>人生走势</h2></div><div class="paper">${visible.available?`<div class="chart-toolbar"><div><label for="domain">查看分项 </label><select id="domain"><option value="overall">整体走势</option>${visible.domains.map(d=>`<option value="${esc(d.id)}">${esc(d.title)}</option>`).join('')}</select></div><button class="export-btn screen-only" id="print" type="button">打印 / 保存 PDF</button></div><p class="timeline-range">展示年份 ${visible.years[0].year}—${visible.years.at(-1).year}</p><div class="chart-scroll"><svg id="trend" role="img" aria-labelledby="trend-title trend-desc" viewBox="0 0 1100 320"><title id="trend-title">人生走势</title><desc id="trend-desc">每个点代表一个年度分。点击年份或用左右方向键切换，查看当年的分析。</desc></svg></div><p class="trend-note">点击年份，可同步查看命盘中的大运、流年和当年批语。</p><div class="selection"><div><h3 id="selected-title"></h3><p id="selected-meta"></p></div><div class="year-controls"><button id="previous" class="nav-button" type="button" aria-label="上一年">←</button><label for="year">年份</label><select id="year"></select><button id="next" class="nav-button" type="button" aria-label="下一年">→</button></div></div><div class="metrics" id="metrics"></div><p class="year-summary" id="year-summary"></p><div class="events" id="events" aria-live="polite"></div><div class="focus-months" id="focus-months"><h4>值得关注的月份</h4><div id="months"></div></div><noscript><div class="noscript">启用 JavaScript 可查看交互走势，也可阅读同时生成的 Markdown 报告。</div></noscript>`:`<div class="empty">${esc(missingTimelineMessage)}</div>`}</div></section>
+<section id="timeline"><div class="section-title"><span class="section-number">04</span><h2>人生走势</h2></div><div class="paper">${visible.available?`<div class="chart-toolbar"><div><label for="domain">查看分项 </label><select id="domain"><option value="overall">整体走势</option>${visible.domains.map(d=>`<option value="${esc(d.id)}">${esc(d.title)}</option>`).join('')}</select></div><button class="export-btn screen-only" id="print" type="button">打印 / 保存 PDF</button></div><p class="timeline-range">展示年份 ${visible.years[0].year}—${visible.years.at(-1).year}</p><div class="chart-scroll"><svg id="trend" role="img" aria-labelledby="trend-title trend-desc" viewBox="0 0 680 320"><title id="trend-title">人生走势</title><desc id="trend-desc">每个点代表一个年度分。</desc>${trendMarkup(visible.years, visible.years.map(row => row.score), initialYearIndex, 680, 320)}</svg></div><p class="trend-note">点击年份，可同步查看命盘中的大运、流年和当年批语。</p><div class="selection"><div><h3 id="selected-title">${esc(initialYear.year)} · ${esc(initialYear.ganZhi)}年</h3><p id="selected-meta"></p></div><div class="year-controls"><button id="previous" class="nav-button" type="button" aria-label="上一年">←</button><label for="year">年份</label><select id="year"></select><button id="next" class="nav-button" type="button" aria-label="下一年">→</button></div></div><div class="metrics" id="metrics"></div><p class="year-summary" id="year-summary">${esc(initialYear.summary)}</p><div class="events" id="events" aria-live="polite"></div><div class="focus-months" id="focus-months"><h4>值得关注的月份</h4><div id="months"></div></div><details class="static-years"><summary>查看逐年走势与批语</summary><ol>${visible.years.map(row => `<li><strong>${esc(row.year)} · ${esc(row.ganZhi)} · ${esc(row.score)} 分</strong> ${esc(row.summary)}</li>`).join('')}</ol></details>`:`<div class="empty">${esc(missingTimelineMessage)}</div>`}</div></section>
 <footer class="footer">八字分析</footer></main>
 <script id="report-data" type="application/json">${payload}</script>
 <script>
@@ -63,41 +71,33 @@ ${CHART_CSS}
 const data=JSON.parse(document.getElementById('report-data').textContent),years=data.timeline.years;
 if(!data.timeline.available||!years.length)return;
 const $=id=>document.getElementById(id),make=(tag,text,className)=>{const n=document.createElement(tag);if(text!=null)n.textContent=String(text);if(className)n.className=className;return n;};
-const svg=$('trend'),ns='http://www.w3.org/2000/svg';
-const shape=(tag,attrs,text,parent=svg)=>{const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,String(v));if(text!=null)n.textContent=String(text);parent.appendChild(n);return n;};
+const svg=$('trend');
 const appendText=(parent,tag,text,className)=>{const n=make(tag,text,className);parent.appendChild(n);return n;};
-let selected=years.reduce((best,y,i)=>Math.abs(y.year-data.focusYear)<Math.abs(years[best].year-data.focusYear)?i:best,0),domain='overall';
+let selected=data.initialYearIndex,domain='overall';
 const valueOf=y=>domain==='overall'?y.score:y.domainScores[domain]?.score,dateLabel=v=>String(v||'').slice(0,10);
 for(const y of years){const o=make('option',y.year+' · '+y.ganZhi);o.value=String(y.year);$('year').appendChild(o);}
 function colored(char,className){const el=make('span',char,className);const element=data.stemElements[char]||data.branchElements[char];el.dataset.element=element||'';el.style.color=data.colors[element]||'#253441';return el;}
 ${EXPLORER_JS}
+const chartMarkup = ${trendMarkup.toString()};
 function draw(){
- svg.querySelectorAll(':scope > :not(title):not(desc)').forEach(n=>n.remove());
- const width=Math.max(280,Math.round(svg.getBoundingClientRect().width)),height=svg.clientHeight||320,left=38,right=22,top=25,bottom=42,inner=width-left-right,values=years.map(valueOf).filter(Number.isFinite);
- svg.setAttribute('viewBox','0 0 '+width+' '+height);
- const min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):100;
- let axisMin=Math.max(0,Math.floor((min-5)/5)*5),axisMax=Math.min(100,Math.ceil((max+5)/5)*5);
- if(axisMax-axisMin<20){const center=(axisMin+axisMax)/2;axisMin=Math.max(0,Math.floor((center-10)/5)*5);axisMax=Math.min(100,axisMin+20);axisMin=Math.max(0,axisMax-20);}
- svg.setAttribute('data-min',axisMin);svg.setAttribute('data-max',axisMax);
- const firstYear=years[0].year,lastYear=years[years.length-1].year,xPos=y=>firstYear===lastYear?left+inner/2:left+(y-firstYear)/(lastYear-firstYear)*inner,yPos=v=>top+(axisMax-v)/(axisMax-axisMin)*(height-top-bottom);
- const tick=(axisMax-axisMin)/4;
- for(let i=0;i<=4;i++){const v=axisMin+tick*i,y=yPos(v);shape('line',{x1:left,y1:y,x2:width-right,y2:y,stroke:'#e1e7e9','stroke-width':1});shape('text',{x:left-10,y:y+4,'text-anchor':'end',fill:'#6c7a85','font-size':10},Math.round(v*10)/10);}
- const selectedX=xPos(years[selected].year);shape('line',{x1:selectedX,y1:top,x2:selectedX,y2:height-bottom,stroke:'#accbc3','stroke-width':1,'stroke-dasharray':'4 5'});
- let path='',previousYear=null;const flush=()=>{if(path)shape('path',{d:path,class:'trend-line'});path='';};
- for(const y of years){const v=valueOf(y);if(!Number.isFinite(v)){flush();previousYear=null;continue;}if(previousYear!==null&&y.year!==previousYear+1)flush();path+=(path?' L ':'M ')+xPos(y.year)+' '+yPos(v);previousYear=y.year;}flush();
- const labelsEvery=Math.max(1,Math.ceil(years.length/Math.max(2,Math.floor(inner/90)))),halfHit=firstYear===lastYear?25:Math.max(4,Math.min(18,inner/(lastYear-firstYear)/2));
- years.forEach((y,i)=>{
-  const value=valueOf(y),x=xPos(y.year);
-  if(Number.isFinite(value)){
-   const group=shape('g',{'data-index':i,'data-year':y.year,'data-score':value,role:'button',tabindex:i===selected?0:-1,'aria-label':'查看 '+y.year+' 年，年度分 '+value,'aria-pressed':i===selected?'true':'false',style:'cursor:pointer'});
-   shape('rect',{x:x-halfHit,y:top,width:halfHit*2,height:height-top-bottom,fill:'transparent'},null,group);
-   shape('circle',{class:'trend-point',cx:x,cy:yPos(value),r:i===selected?5.5:3.5,fill:i===selected?'#246b60':'#fff',stroke:'#246b60','stroke-width':1.8},null,group);
-   shape('title',{},y.year+' '+y.ganZhi+' · 年度分 '+value,group);
-   group.addEventListener('click',()=>select(i));group.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(i);}else if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();select(Math.max(0,Math.min(years.length-1,i+(e.key==='ArrowRight'?1:-1))));svg.querySelector('[data-index="'+selected+'"]').focus();}});
-  }
-  if(i%labelsEvery===0||i===years.length-1)shape('text',{x,y:height-18,'text-anchor':'middle',fill:'#6c7a85','font-size':10},y.year);
- });shape('text',{x:left,y:13,fill:'#6c7a85','font-size':10},'年度分');
+  const width = Math.max(280, Math.round(svg.getBoundingClientRect().width));
+  const height = svg.clientHeight || 320;
+  const markup = chartMarkup(years, years.map(valueOf), selected, width, height, true);
+  svg.setAttribute('viewBox', '0 0 '+width+' '+height);
+  svg.innerHTML = '<title id="trend-title">人生走势</title><desc id="trend-desc">每个点代表一个年度分。</desc>' + markup;
 }
+svg.addEventListener('click', event => {
+  const point = event.target.closest('[data-index]');
+  if (point) select(Number(point.dataset.index));
+});
+svg.addEventListener('keydown', event => {
+  const point = event.target.closest('[data-index]');
+  if (!point || !['Enter', ' ', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+  event.preventDefault();
+  const offset = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+  select(Math.max(0, Math.min(years.length - 1, Number(point.dataset.index) + offset)));
+  svg.querySelector('[data-index="'+selected+'"]')?.focus();
+});
 function select(index){
  selected=index;const y=years[index],value=valueOf(y),previous=years[index-1];$('year').value=String(y.year);$('previous').disabled=index===0;$('next').disabled=index===years.length-1;
  $('selected-title').textContent=y.year+' · '+y.ganZhi+'年';$('selected-meta').textContent=(y.age==null?'':y.age+'岁 · ')+'大运 '+y.daYun;
@@ -107,7 +107,7 @@ function select(index){
  $('events').replaceChildren();for(const e of y.events){const card=make('article',null,'event');appendText(card,'div',data.timeline.eventDomains.find(d=>d.id===e.domain)?.title||'当年分析','event-domain');appendText(card,'h4',e.title);appendText(card,'p',e.reading);$('events').appendChild(card);}
  $('focus-months').hidden=!y.focusMonths.length;$('months').replaceChildren();for(const m of y.focusMonths){const card=make('article',null,'month-card focus-month');appendText(card,'h5',dateLabel(m.startDate)+' 至 '+dateLabel(m.endDate)+' · '+m.ganZhi+'月');for(const e of m.events){appendText(card,'p',e.title+'：'+e.reading);}$('months').appendChild(card);}renderExplorer(y);draw();
 }
-$('year').addEventListener('change',e=>select(years.findIndex(y=>String(y.year)===e.target.value)));$('domain').addEventListener('change',e=>{domain=e.target.value;select(selected);});$('previous').addEventListener('click',()=>select(Math.max(0,selected-1)));$('next').addEventListener('click',()=>select(Math.min(years.length-1,selected+1)));$('print').addEventListener('click',()=>window.print());window.addEventListener('resize',draw);window.addEventListener('beforeprint',draw);window.addEventListener('afterprint',draw);select(selected);
+$('year').addEventListener('change',e=>select(years.findIndex(y=>String(y.year)===e.target.value)));$('domain').addEventListener('change',e=>{domain=e.target.value;select(selected);});$('previous').addEventListener('click',()=>select(Math.max(0,selected-1)));$('next').addEventListener('click',()=>select(Math.min(years.length-1,selected+1)));$('print').addEventListener('click',()=>window.print());window.addEventListener('resize',draw);window.addEventListener('beforeprint',draw);window.addEventListener('afterprint',draw);select(selected);document.documentElement.classList.add('report-interactive');
 })();
 </script></body></html>`;
 }
@@ -119,7 +119,7 @@ export function renderMarkdown(report){
  for(const [label,fn]of [['十神',c=>c.stemGod],['藏干',c=>c.hiddenStems.map(h=>`${h.stem}（${h.god}）`).join('、')],['十二长生',c=>c.diShi],['空亡',c=>c.xunKong],['神煞',c=>c.shenSha?.join('、')||'—']])lines.push(`| ${label} | ${columns.map(c=>md(fn(c))).join(' | ')} |`);
  lines.push('',`五行：${Object.entries(ELEMENTS).map(([e,color])=>`<span style="color:${color}">${e}</span>`).join(' · ')}`,'');
  if(chart.lunarDate)lines.push(`农历：${md(chart.lunarDate)}`,'');if(chart.luck?.available)lines.push(`首次交运：${md(chart.luck.startDate)} · ${chart.luck.forward?'顺行':'逆行'}`,'');
- const cg=report.chenggu;if(cg?.available)lines.push(`称骨重量：**${md(cg.weight?.totalText)}**`,'',`称骨评语：${(cg.verse||[]).map(md).join('，')}。`,'',`称骨解读：${md(cg.translation)}`,'');else if(cg)lines.push(`称骨：${md(cg.reason)}`,'');
+ const cg=chengguForDisplay(report.chenggu, chart.gender ?? input.gender);if(cg?.available)lines.push(`称骨重量：**${md(cg.weight?.totalText)}**`,'',`称骨评语：${(cg.verse||[]).map(md).join('，')}。`,'',`称骨解读：${md(cg.translation)}`,'');else if(cg)lines.push(`称骨：${md(cg.reason)}`,'');
  if(explorer.years.length){lines.push('### 大运与流年对照','','| 大运 | 交运时间 | 流年干支 |','| --- | --- | --- |');for(const c of explorer.cycles){const entries=explorer.years.filter(y=>y.cycleIds.includes(c.id));if(entries.length)lines.push(`| ${md(c.ganZhi||'起运前')} | ${md(c.startDate)} 至 ${md(c.endDate)} | ${entries.map(y=>`${y.year} ${md(y.ganZhi)}`).join('、')} |`);}lines.push('');}
  lines.push('本命刑冲破害合：','',...pillarRelationships(columns).map(r=>'- '+md(r.text)),'');
  lines.push('## 整体分析','',md(analysis.summary),'');const context=contextText(input.context);if(context)lines.push(md(context),'');

@@ -14,6 +14,18 @@ function checkPublicKeys(value){
 const life=report=>report.lifeTimeline??report.timeline;
 const event=()=>({domain:'family',publicTitle:'家人的安排有调整',reading:'和家人重新分配照料时间。',evidence:[{text:'PRIVATE_EVIDENCE_MARKER'}]});
 
+test('re-rendering an older female report corrects its shared song without changing the saved report', async()=>{
+  const report=await createReading({...input,gender:'female'},{provider:'local'});
+  const expected=report.chenggu.verse[0],translation=report.chenggu.translation;
+  report.chenggu={...report.chenggu,verse:['旧共用歌'],translation:'旧共用释义',
+    provenance:{policy:{id:'chenggu-common-lunar-v1'}}};
+  for(const output of [renderHtml(report),renderMarkdown(report)]){
+    assert.ok(output.includes(expected) && output.includes(translation));
+    assert.doesNotMatch(output,/旧共用/);
+  }
+  assert.equal(report.chenggu.verse[0],'旧共用歌');
+});
+
 test('report aligns natal pillars in table rows with distinct element colors and valid offline scripts',async()=>{
   const report=await createReading(input,{provider:'local'});
   const html=renderHtml(report),markdown=renderMarkdown(report);
@@ -113,6 +125,11 @@ test('missing years are not interpolated or backfilled in public timelines or ex
   report.lifeTimeline.years=report.lifeTimeline.years.filter(y=>y.year!==2026);
   const html=renderHtml(report),markdown=renderMarkdown(report),data=getPayload(html);
   assert.ok(!data.timeline.years.some(y=>y.year===2026));assert.ok(!data.explorer.years.some(y=>y.year===2026));
+  const svg = html.match(/<svg id="trend"[\s\S]*?<\/svg>/)[0];
+  assert.deepEqual([...svg.matchAll(/data-year="(\d+)" data-score="([\d.]+)"/g)].map(m => [+m[1], +m[2]]),
+    data.timeline.years.map(y => [y.year, y.score]));
+  const path = svg.match(/<path class="trend-line" d="([^"]+)"/)[1];
+  assert.equal(path.split('M ').length - 1, 2, 'the pre-rendered curve breaks at missing years');
   assert.doesNotMatch(markdown,/### 2026/);
   const y=report.lifeTimeline.years.find(y=>y.year===2027);
   assert.ok(markdown.includes(`| 2027 ${y.ganZhi} | ${y.age} | ${y.daYun} | ${y.score} | — |`));

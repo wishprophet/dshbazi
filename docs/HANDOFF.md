@@ -1,6 +1,6 @@
 # dsh-bazi 开发交接
 
-本文针对 0.1.6，供接手开发、维护和部署使用。0.1.6 补充市场素材，沿用 0.1.5 的排盘与解读规则。最新发布与验证状态分别见 [版本记录](../CHANGELOG.md)、[验证记录](validation.md) 和 [发布步骤](publishing.md)，市场维护见 [MARKETPLACE.md](MARKETPLACE.md)。用户阅读的命盘报告不包含本文这些实现说明。
+本文针对 0.1.7。称骨按性别选歌，报告生成时即绘制年度折线，交互由浏览器增强。最新发布与验证状态分别见 [版本记录](../CHANGELOG.md)、[验证记录](validation.md) 和 [发布步骤](publishing.md)，市场维护见 [MARKETPLACE.md](MARKETPLACE.md)。用户阅读的命盘报告不包含本文这些实现说明。
 
 ## 先把项目跑起来
 
@@ -144,7 +144,7 @@ git diff --check
 
 ```powershell
 npm install --prefix reports/rc1-check --save-exact --ignore-scripts --no-audit --no-fund @deepseek-ai/cordis@4.1.0 @deepseek-ai/dsh-app-boot@0.2.2-rc.1 @deepseek-ai/dsh-tools@0.2.2-rc.1 @deepseek-ai/dsh-skill@0.2.2-rc.1 @deepseek-ai/dsh-system-prompt@0.2.2-rc.1
-npm install --prefix reports/install-check --ignore-scripts --no-audit --no-fund ./dsh-bazi-0.1.6.tgz
+npm install --prefix reports/install-check --ignore-scripts --no-audit --no-fund ./dsh-bazi-0.1.7.tgz
 node scripts/verify-dsh-rc1.js
 ```
 
