@@ -4,6 +4,8 @@
 
 首次收录申请：[PR #16681](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/16681)。投稿分支为 `wishprophet/awesome-dsh-plugin:add-dshbazi`，仅新增本插件 YAML。公开发行包和校验文件见 [v0.1.6 Release](https://github.com/wishprophet/dshbazi/releases/tag/v0.1.6)，该申请已于 2026-11-21（北京时间）合并。
 
+v0.1.7 修复了男女称骨歌诀和默认沙箱中的年度走势显示。市场安装地址的更新记录见 [PR #18839](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/18839)。[发行说明与校验文件](https://github.com/wishprophet/dshbazi/releases/tag/v0.1.7)
+
 ## 本项目的市场资料
 
 - 源码仓库：`wishprophet/dshbazi`，公开可读，主题包含 `dsh-plugin`。
@@ -11,7 +13,7 @@
 - 条目路径：市场仓库中的 `data/plugins/wishprophet__dshbazi.yml`。
 - 图标：`assets/icon-180.png`，GitHub 托管的方形 PNG；`assets/icon.html` 为原创排版源文件。
 - 截图：根目录 `screenshots.json` 声明五张相对路径，实际文件在 `docs/screenshots/`。所有命盘截图来自虚构示例，不包含真实个人资料。
-- 安装附件：`https://github.com/wishprophet/dshbazi/releases/download/v0.1.6/dsh-bazi-0.1.6.tgz`。条目将固定版本与固定文件名配对，避免 latest 地址与版本化文件名组合失效。
+- v0.1.7 的[安装附件](https://github.com/wishprophet/dshbazi/releases/download/v0.1.7/dsh-bazi-0.1.7.tgz)已通过公开下载校验。市场条目的 `tarball` 字段使用带标签和完整文件名的固定链接。
 
 截图和图标位于插件自己的仓库，市场投稿只添加一份 YAML；不要手工编辑市场生成的中英文 README，也不要修改其他插件的条目。
 
